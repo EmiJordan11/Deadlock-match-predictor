@@ -1,0 +1,97 @@
+# airflow-deadlock
+
+Pipeline de la Entrega 1 (Ingeniería de datos) del Proyecto Integrador -
+Ciencia de Datos, UTN FRM 2026. Construye el dataset de partidas de
+Deadlock que responde la pregunta del proyecto: *¿se puede saber quién gana
+una partida sabiendo solo la composición de héroes de los dos equipos?*
+
+El diseño de las 73 columnas, los 6 problemas detectados en el diseño
+original y sus soluciones están documentados en
+`../decisiones-diseno-dataset.md` y `../estructura-dataset-final.md`. Este
+proyecto es la implementación de ese diseño, con la misma estructura que
+`airflow-fifa/` (Astro CLI + Airflow 3, TaskFlow API) pero adaptada a una
+fuente distinta: una API REST JSON estable, no un sitio para scrapear.
+
+## Arrancar
+
+```bash
+astro dev start
+```
+
+UI en `localhost:8080`. Disparar `deadlock_ingest` manualmente (no tiene
+schedule -- ver "Por qué no está agendado" más abajo).
+
+## Los params de la corrida
+
+| Param | Default | Qué controla |
+|---|---|---|
+| `fecha_corte` | `2026-08-20` | La fecha `T` que separa las dos ventanas (Problema 3). Fija a propósito: nunca calculada con `datetime.now()`. |
+| `dias_ventana_stats` | 14 | Ancho de la ventana de estadísticas, hacia atrás desde T. |
+| `dias_ventana_matches` | 3 | Ancho de la ventana de partidas, hacia adelante desde T. |
+| `objetivo_filas` | 10000 | Partidas a juntar en modo `full`. |
+| `min_matches_stats` | 1 | `min_matches` pedido a los 3 endpoints de analytics, antes del shrinkage. |
+| `k_shrinkage` | 100 | Constante `k` del shrinkage bayesiano (Problema 4). |
+| `modo` | `subset` | `subset`: ~500 partidas, para iterar rápido. `full`: la corrida que se muestra en la Entrega 1. |
+
+Para la corrida oficial: disparar con `modo=full` y con el `fecha_corte`
+que el grupo haya decidido documentar.
+
+## El grafo
+
+```
+resolve_window
+      │
+      ├──► extract_hero_stats ─────┐
+      ├──► extract_counter_stats ──┤
+      ├──► extract_synergy_stats ──┼──► validate_bronze ──► build_stat_tables ──┐
+      └──► extract_matches ────────┘                                            ├──► build_features ──► quality_gate ──► export_csv
+                                    └────────────────────► build_matches_table ─┘
+```
+
+- **Bronce** (`extract_*`): las respuestas crudas de la API, particionadas
+  por `corte=<T>`. Si el archivo ya existe para ese `T`, no se vuelve a
+  pedir nada -- correr el DAG dos veces con el mismo `fecha_corte` no
+  genera tráfico extra.
+- **Plata** (`build_stat_tables`, `build_matches_table`, `build_features`):
+  las tablas de consulta con *shrinkage* ya aplicado, la base de partidas
+  parseada, y finalmente las 66 columnas de features.
+- **`quality_gate`**: los 6 chequeos medibles de la consigna. Si alguno
+  falla, el DAG falla -- no se publica un CSV que no cumple.
+
+## Por qué no está agendado
+
+Con `fecha_corte` fijo por Param, agendar (`@daily`, etc.) no aporta nada:
+"automatizado" acá significa que ningún dato se toca a mano entre la API y
+el CSV final, no que el DAG corra solo todos los días. Se dispara
+manualmente para cada corte que el grupo quiera producir.
+
+## Por qué es más simple que `fifa_ingest.py`
+
+`fifa_ingest.py` tiene sensor, branch, short-circuit, `.expand()` dinámico
+y 3 niveles de degradación porque scrapea un sitio detrás de Cloudflare que
+puede bloquear, cambiar de estructura o caerse. La Deadlock API es un REST
+JSON estable, verificado en vivo antes de escribir este DAG: no requiere
+API key y no bloquea. Su único modo de falla esperable es rate limiting
+transitorio (429), que resuelven los `retries` de cada tarea de red -- no
+hace falta una máquina de estados completa para eso. El razonamiento
+completo está en el docstring de `dags/deadlock_ingest.py`.
+
+## Verificar el dataset producido
+
+```python
+import pandas as pd
+df = pd.read_csv("include/output/deadlock_<fecha>.csv")
+
+df["match_id"].is_unique                       # clave sin duplicados
+len(df)                                         # volumen
+df.shape                                        # ancho
+df.dtypes.value_counts()                        # mezcla de tipos
+df.isna().mean().sort_values(ascending=False)   # nulos conocidos (solo average_badge/average_badge_diff deberían tener)
+df.columns[df.isna().all()]                     # sin columnas 100% nulas
+```
+
+## Testing
+
+```bash
+astro dev pytest
+```

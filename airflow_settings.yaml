@@ -1,0 +1,17 @@
+airflow:
+  connections:
+    - conn_id: deadlock_api
+      conn_type: http
+      conn_host: api.deadlock-api.com
+      conn_schema: https
+      conn_login:
+      conn_password:
+      conn_port:
+      conn_extra:
+  pools:
+    - pool_name:
+      pool_slot:
+      pool_description:
+  variables:
+    - variable_name:
+      variable_value:
