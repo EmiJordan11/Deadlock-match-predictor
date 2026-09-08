@@ -143,8 +143,9 @@ def iter_matches(min_ts: int, max_ts: int, objetivo_filas: int, limit: int = 100
         if not lote:
             if pagina == 1:
                 log.warning("La ventana de partidas no tiene NINGUNA partida que cumpla "
-                             "el filtro (game_mode=normal, match_mode=ranked). Revisar si "
-                             "fecha_corte cae en un periodo con poco volumen ranked.")
+                             "el filtro (game_mode=%s, match_mode=%s). Revisar si "
+                             "fecha_corte cae en un periodo con poco volumen para ese modo.",
+                             params["game_mode"], params["match_mode"])
             else:
                 log.info("Ventana de partidas agotada tras %s pagina(s).", pagina - 1)
             return

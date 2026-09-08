@@ -28,13 +28,15 @@ schedule -- ver "Por qué no está agendado" más abajo).
 | `fecha_corte` | `2026-08-20` | La fecha `T` que separa las dos ventanas (Problema 3). Fija a propósito: nunca calculada con `datetime.now()`. |
 | `dias_ventana_stats` | 14 | Ancho de la ventana de estadísticas, hacia atrás desde T. |
 | `dias_ventana_matches` | 3 | Ancho de la ventana de partidas, hacia adelante desde T. |
-| `objetivo_filas` | 10000 | Partidas a juntar en modo `full`. |
+| `objetivo_filas` | 10000 | Partidas a juntar. |
 | `min_matches_stats` | 1 | `min_matches` pedido a los 3 endpoints de analytics, antes del shrinkage. |
 | `k_shrinkage` | 100 | Constante `k` del shrinkage bayesiano (Problema 4). |
-| `modo` | `subset` | `subset`: ~500 partidas, para iterar rápido. `full`: la corrida que se muestra en la Entrega 1. |
+| `force` | `false` | Ignora el bronce en cache para este `fecha_corte` y vuelve a pedirle todo a la API, aunque ya existan archivos. |
 
-Para la corrida oficial: disparar con `modo=full` y con el `fecha_corte`
-que el grupo haya decidido documentar.
+Toda corrida junta `objetivo_filas` partidas — no hay un modo "de prueba"
+más chico. Para iterar rápido durante el desarrollo, bajá `objetivo_filas`
+a mano en el trigger; para la corrida oficial, dejalo en 10000 (o el valor
+que el grupo documente) junto con el `fecha_corte` elegido.
 
 ## El grafo
 

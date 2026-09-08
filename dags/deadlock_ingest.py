@@ -76,6 +76,22 @@ def _silver_dir(corte: str) -> Path:
     return PLATA_DIR / f"corte={corte}"
 
 
+def _bronce_stats_cacheado(destino: Path) -> list | None:
+    """Reusa un archivo de bronce de stats solo si existe Y tiene contenido.
+
+    Un archivo vacio (`[]`) casi siempre es la marca de una corrida anterior
+    contra una ventana/filtro que no tenia datos (ej. un fecha_corte con
+    poco volumen para el match_mode de ese momento) -- no una respuesta
+    valida para cachear. Sin este chequeo, cambiar el filtro y volver a
+    correr con el mismo fecha_corte reusaria ese vacio para siempre, sin
+    volver a pedirle nada a la API.
+    """
+    if not destino.exists():
+        return None
+    datos = json.loads(destino.read_text(encoding="utf-8"))
+    return datos or None
+
+
 @dag(
     dag_id="deadlock_ingest",
     # Con T fijo por Param, agendar no aporta nada: "automatizado" acá
@@ -104,7 +120,7 @@ def _silver_dir(corte: str) -> Path:
         ),
         "objetivo_filas": Param(
             10000, type="integer", minimum=1,
-            title="Partidas a juntar en modo full",
+            title="Partidas a juntar",
         ),
         "min_matches_stats": Param(
             1, type="integer", minimum=1,
@@ -116,10 +132,14 @@ def _silver_dir(corte: str) -> Path:
             title="Constante k del shrinkage bayesiano (Problema 4)",
             description="Ver docs/decisiones-diseno-dataset.md por el razonamiento estadistico.",
         ),
-        "modo": Param(
-            "subset", enum=["subset", "full"],
-            title="Modo de corrida",
-            description="subset: ~500 partidas, para iterar rapido. full: la corrida de la Entrega 1.",
+        "force": Param(
+            False, type="boolean",
+            title="Forzar la corrida",
+            description=("Ignora el bronce en cache para este fecha_corte y vuelve a "
+                         "pedirle todo a la API, aunque ya existan archivos. Pensado "
+                         "para cuando el bronce cacheado quedo vacio o desactualizado "
+                         "por una corrida anterior con otros filtros -- misma idea que "
+                         "'force' en fifa_ingest.py."),
         ),
     },
 )
@@ -154,7 +174,7 @@ def deadlock_ingest():
     def extract_hero_stats(ventana: dict, **context) -> str:
         """Bronce: /v1/analytics/hero-stats. Una sola llamada, los 38 heroes."""
         destino = _stats_bronze_path(ventana["fecha_corte"], "hero_stats")
-        if destino.exists():
+        if not context["params"]["force"] and _bronce_stats_cacheado(destino) is not None:
             log.info("hero_stats ya en bronce (corte=%s), no se vuelve a pedir.",
                       ventana["fecha_corte"])
             return str(destino)
@@ -170,7 +190,7 @@ def deadlock_ingest():
     def extract_counter_stats(ventana: dict, **context) -> str:
         """Bronce: /v1/analytics/hero-counter-stats. Matriz completa heroe-vs-heroe."""
         destino = _stats_bronze_path(ventana["fecha_corte"], "counter_stats")
-        if destino.exists():
+        if not context["params"]["force"] and _bronce_stats_cacheado(destino) is not None:
             log.info("counter_stats ya en bronce (corte=%s), no se vuelve a pedir.",
                       ventana["fecha_corte"])
             return str(destino)
@@ -186,7 +206,7 @@ def deadlock_ingest():
     def extract_synergy_stats(ventana: dict, **context) -> str:
         """Bronce: /v1/analytics/hero-synergy-stats. Matriz completa de parejas del mismo equipo."""
         destino = _stats_bronze_path(ventana["fecha_corte"], "synergy_stats")
-        if destino.exists():
+        if not context["params"]["force"] and _bronce_stats_cacheado(destino) is not None:
             log.info("synergy_stats ya en bronce (corte=%s), no se vuelve a pedir.",
                       ventana["fecha_corte"])
             return str(destino)
@@ -208,16 +228,28 @@ def deadlock_ingest():
         de verdad si la ventana elegida es mas angosta.
 
         El cache por corte NO es todo-o-nada: si ya hay paginas de una
-        corrida anterior (por ejemplo un `modo=subset` de prueba) pero
-        juntan menos partidas que el objetivo actual, se completa la
+        corrida anterior (por ejemplo con un `objetivo_filas` mas chico)
+        pero juntan menos partidas que el objetivo actual, se completa la
         diferencia paginando desde el ultimo match_id ya bajado, en vez de
         reusarlas tal cual (lo que dejaria el dataset corto en silencio) o
         de volver a pedir todo desde el principio.
+
+        Con `force=True` se ignora el bronce existente por completo (se
+        borra y se vuelve a bajar desde cero) -- pensado para cuando las
+        paginas cacheadas quedaron de una corrida con otros filtros
+        (game_mode/match_mode), donde "completar la diferencia" no sirve
+        porque las partidas viejas ya no corresponden al filtro actual.
         """
         corte = ventana["fecha_corte"]
         destino_dir = _matches_bronze_dir(corte)
         params = context["params"]
-        objetivo = 500 if params["modo"] == "subset" else params["objetivo_filas"]
+        objetivo = params["objetivo_filas"]
+
+        if params["force"] and destino_dir.exists():
+            for p in destino_dir.glob("pagina_*.json.gz"):
+                p.unlink()
+            log.info("force=True: se borro el bronce de partidas existente (corte=%s) "
+                      "y se vuelve a bajar todo.", corte)
 
         rutas = sorted(destino_dir.glob("pagina_*.json.gz")) if destino_dir.exists() else []
         juntadas, ultimo_match_id = 0, None
