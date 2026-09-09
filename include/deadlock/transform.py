@@ -44,13 +44,34 @@ def parse_match(raw_match: dict) -> dict | None:
         otro dato parcial)
       - hay un hero_id fuera del catalogo de 38 heroes activos
       - la partida no tiene un equipo ganador definido
+
+    Nota sobre badges (verificado leyendo el bronce crudo, en ranked y en
+    unranked): `average_badge_team0`/`average_badge_team1` los devuelve la
+    API siempre en 0 en este endpoint -- no es un problema de match_mode,
+    el desglose por equipo directamente no esta disponible aca. El campo
+    agregado `average_badge` si viene poblado con datos reales (None en
+    partidas unranked, un numero real en ranked), asi que se usa tal cual
+    viene. Para `average_badge_diff` se reconstruye a mano un proxy
+    promediando `player_rank_initial_display_rank` (mismo esquema
+    tier*10+subrank que el badge oficial, documentado en el OpenAPI spec)
+    de los jugadores de cada equipo. ADVERTENCIA para la defensa: este
+    promedio es una aproximacion, no una descomposicion exacta de
+    `average_badge` -- verificado con muestras reales, puede diferir del
+    agregado de la API en varios puntos (probablemente porque `average_badge`
+    usa una senal interna, tipo MMR oculto, no el simple promedio del rank
+    de entrada visible). Se documenta como concesion explicita, no como el
+    mismo numero partido en dos.
     """
     equipos = {"Team0": [], "Team1": []}
+    ranks_iniciales = {"Team0": [], "Team1": []}
     for jugador in raw_match.get("players") or []:
         team = jugador.get("team")
         hero_id = jugador.get("hero_id")
         if team in equipos and hero_id in schema.HERO_IDS:
             equipos[team].append(hero_id)
+        rango = jugador.get("player_rank_initial_display_rank")
+        if team in ranks_iniciales and rango is not None:
+            ranks_iniciales[team].append(rango)
 
     if len(equipos["Team0"]) != 6 or len(equipos["Team1"]) != 6:
         return None
@@ -59,17 +80,16 @@ def parse_match(raw_match: dict) -> dict | None:
     if winning_team not in ("Team0", "Team1"):
         return None
 
-    badge0 = raw_match.get("average_badge_team0")
-    badge1 = raw_match.get("average_badge_team1")
-    average_badge = (badge0 + badge1) / 2 if badge0 is not None and badge1 is not None else None
-    average_badge_diff = (badge0 - badge1) if badge0 is not None and badge1 is not None else None
+    badge_a = statistics.mean(ranks_iniciales["Team0"]) if ranks_iniciales["Team0"] else None
+    badge_b = statistics.mean(ranks_iniciales["Team1"]) if ranks_iniciales["Team1"] else None
+    average_badge_diff = (badge_a - badge_b) if badge_a is not None and badge_b is not None else None
 
     return {
         "match_id": raw_match["match_id"],
         "match_date": _parse_start_time(raw_match["start_time"]),
         "game_mode": raw_match.get("game_mode"),
         "match_mode": raw_match.get("match_mode"),
-        "average_badge": average_badge,
+        "average_badge": raw_match.get("average_badge"),
         "average_badge_diff": average_badge_diff,
         "winner": "A" if winning_team == "Team0" else "B",
         "heroes_a": equipos["Team0"],

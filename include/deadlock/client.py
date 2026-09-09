@@ -71,7 +71,7 @@ def get_hero_stats(min_ts: int, max_ts: int, min_matches: int = 1) -> list[dict]
         "min_unix_timestamp": min_ts,
         "max_unix_timestamp": max_ts,
         "game_mode": "normal",
-        "match_mode": "unranked",
+        "match_mode": "ranked",
         "min_matches": min_matches,
     })
 
@@ -82,7 +82,7 @@ def get_counter_stats(min_ts: int, max_ts: int, min_matches: int = 1) -> list[di
         "min_unix_timestamp": min_ts,
         "max_unix_timestamp": max_ts,
         "game_mode": "normal",
-        "match_mode": "unranked",
+        "match_mode": "ranked",
         "min_matches": min_matches,
         # requests serializa el bool de Python como "False" (mayuscula); la
         # API espera literalmente "true"/"false" en minuscula y devuelve
@@ -97,7 +97,7 @@ def get_synergy_stats(min_ts: int, max_ts: int, min_matches: int = 1) -> list[di
         "min_unix_timestamp": min_ts,
         "max_unix_timestamp": max_ts,
         "game_mode": "normal",
-        "match_mode": "unranked",
+        "match_mode": "ranked",
         "min_matches": min_matches,
     })
 
@@ -125,7 +125,7 @@ def iter_matches(min_ts: int, max_ts: int, objetivo_filas: int, limit: int = 100
             "min_unix_timestamp": min_ts,
             "max_unix_timestamp": max_ts,
             "game_mode": "normal",
-            "match_mode": "unranked",
+            "match_mode": "ranked",
             "order_by": "match_id",
             "order_direction": "asc",
             "limit": min(limit, objetivo_filas - juntadas),
