@@ -1,0 +1,7 @@
+# Dependencias para correr el notebook de la Entrega 2 (fuera de la imagen de Airflow).
+pandas>=2.2
+pyarrow>=17.0
+numpy>=1.26
+matplotlib>=3.8
+jinja2>=3.1
+jupyter
