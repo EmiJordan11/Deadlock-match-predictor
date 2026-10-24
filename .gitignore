@@ -5,7 +5,6 @@
 # versiona para que la conexión exista al primer `astro dev start`.
 # Cuando tu proyecto necesite una API key, sacala de acá.
 logs/
-include/output/
 __pycache__/
 *.pyc
 
