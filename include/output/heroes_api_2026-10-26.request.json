@@ -1,0 +1,8 @@
+{
+  "endpoint": "/v1/assets/heroes",
+  "params": {
+    "only_active": "true"
+  },
+  "sha256": "8adb8867a28e30b67c0710060f92914c3b5ae8f55b31543a5613dd8bff39ccb2",
+  "rows": 44
+}

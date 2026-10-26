@@ -1,0 +1,40 @@
+{
+  "selected_config": {
+    "model": "linear_svm",
+    "block": "all_trend",
+    "days": 20,
+    "policy": "expanding",
+    "phase": "tune",
+    "alternative": "tuning",
+    "params": {
+      "C": 0.1
+    },
+    "id": "linear_svm|all_trend|20|expanding|{\"C\": 0.1}"
+  },
+  "metrics": {
+    "auc": 0.6103752470193575,
+    "accuracy": 0.5781,
+    "brier": null,
+    "logloss": null,
+    "fit_predict_seconds": 2.793348799999876,
+    "warnings": [],
+    "n_train": 40000,
+    "n_valid": 10000,
+    "n_features": 73,
+    "effective_n": 40000
+  },
+  "dummy": {
+    "auc": 0.5,
+    "accuracy": 0.5021,
+    "brier": 0.25001721250000003,
+    "logloss": 0.6931816104198182,
+    "fit_predict_seconds": 0.010897599999680097,
+    "warnings": [],
+    "n_train": 40000,
+    "n_valid": 10000,
+    "n_features": 73,
+    "effective_n": 40000
+  },
+  "calibration": [],
+  "evaluated_at": "2026-10-26T23:32:40.872373+00:00"
+}

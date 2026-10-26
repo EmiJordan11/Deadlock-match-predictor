@@ -1,0 +1,16 @@
+{
+  "request": {
+    "endpoint": "/v1/analytics/hero-counter-stats",
+    "params": {
+      "min_unix_timestamp": 1785974400,
+      "max_unix_timestamp": 1787183999,
+      "game_mode": "normal",
+      "match_mode": "ranked",
+      "min_matches": 1,
+      "same_lane_filter": "false"
+    }
+  },
+  "sha256": "7a50fd6e2bb56e9409e6afe5e18211609cfe564d85d18d3bc57b3882a79c9b0f",
+  "retrieved_at": "2026-10-26T23:10:18.493482+00:00",
+  "rows": 1408
+}

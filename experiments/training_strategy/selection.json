@@ -1,0 +1,23 @@
+{
+  "config": {
+    "model": "linear_svm",
+    "block": "all_trend",
+    "days": 20,
+    "policy": "expanding",
+    "phase": "tune",
+    "alternative": "tuning",
+    "params": {
+      "C": 0.1
+    },
+    "id": "linear_svm|all_trend|20|expanding|{\"C\": 0.1}"
+  },
+  "reference_id": "logistic|A1|14|expanding|{}",
+  "reference_auc": 0.6135505433852059,
+  "reference_std": 0.0023139078361366387,
+  "complexity_threshold": 0.6158644512213425,
+  "candidates_above_threshold": 11,
+  "selected_auc": 0.6162134759803229,
+  "rule": "A1 logística 14d como referencia. Complejidad solo si mejora > desvío muestral de A1; si empatan, logística A1, mejor ventana/C por CV. Empates de AUC (tolerancia 1e-12) dentro de A1 se resuelven por menor Brier de CV.",
+  "selected_before_test": true,
+  "created_at": "2026-10-26T23:32:37.785708+00:00"
+}

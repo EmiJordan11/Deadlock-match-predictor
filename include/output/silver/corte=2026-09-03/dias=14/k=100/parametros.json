@@ -1,0 +1,71 @@
+{
+  "fecha_corte": "2026-09-03",
+  "dias_ventana_stats": 14,
+  "dias_ventana_matches": 3,
+  "k_shrinkage": 100,
+  "game_mode": "normal",
+  "match_mode": "ranked",
+  "min_matches_stats": 1,
+  "objetivo_filas": 10000,
+  "hero_ids": [
+    1,
+    2,
+    3,
+    4,
+    6,
+    7,
+    8,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    25,
+    27,
+    31,
+    35,
+    50,
+    52,
+    58,
+    60,
+    63,
+    64,
+    65,
+    66,
+    67,
+    69,
+    72,
+    76,
+    77,
+    78,
+    79,
+    80,
+    81,
+    84,
+    85,
+    86,
+    87,
+    88
+  ],
+  "features_sha256": "7315127abd8eb571c9eb8b98a15c5eb445ee0a118527f8d9b6fb30f3b0fbdb28",
+  "stats_sources": [
+    {
+      "path": "include\\output\\bronze\\corte=2026-09-03\\stats\\dias=14\\hero_stats.json",
+      "sha256": "0e55e809a39ca032adc329c5f66e7c0cdb53dcdf970d44c589b2853f9caf8e86"
+    },
+    {
+      "path": "include\\output\\bronze\\corte=2026-09-03\\stats\\dias=14\\counter_stats.json",
+      "sha256": "492a80336eba3174f53cb957333263e7037ad286896623bad3255762d4f3a538"
+    },
+    {
+      "path": "include\\output\\bronze\\corte=2026-09-03\\stats\\dias=14\\synergy_stats.json",
+      "sha256": "cf56762ca09d77ff4c77300670ed0e1044c89e3c95ad372f161b91ab6d65926c"
+    }
+  ]
+}

@@ -1,0 +1,1136 @@
+[
+  {
+    "model": "dummy",
+    "block": "A1",
+    "days": 7,
+    "policy": "expanding",
+    "phase": "tune",
+    "alternative": "tuning",
+    "params": {},
+    "id": "dummy|A1|7|expanding|{}"
+  },
+  {
+    "model": "logistic",
+    "block": "all_trend",
+    "days": 20,
+    "policy": "expanding",
+    "phase": "tune",
+    "alternative": "tuning",
+    "params": {
+      "C": 0.0001
+    },
+    "id": "logistic|all_trend|20|expanding|{\"C\": 0.0001}"
+  },
+  {
+    "model": "logistic",
+    "block": "all_trend",
+    "days": 20,
+    "policy": "expanding",
+    "phase": "tune",
+    "alternative": "tuning",
+    "params": {
+      "C": 0.001
+    },
+    "id": "logistic|all_trend|20|expanding|{\"C\": 0.001}"
+  },
+  {
+    "model": "logistic",
+    "block": "all_trend",
+    "days": 20,
+    "policy": "expanding",
+    "phase": "tune",
+    "alternative": "tuning",
+    "params": {
+      "C": 0.01
+    },
+    "id": "logistic|all_trend|20|expanding|{\"C\": 0.01}"
+  },
+  {
+    "model": "logistic",
+    "block": "all_trend",
+    "days": 20,
+    "policy": "expanding",
+    "phase": "tune",
+    "alternative": "tuning",
+    "params": {
+      "C": 0.1
+    },
+    "id": "logistic|all_trend|20|expanding|{\"C\": 0.1}"
+  },
+  {
+    "model": "logistic",
+    "block": "all_trend",
+    "days": 20,
+    "policy": "expanding",
+    "phase": "tune",
+    "alternative": "tuning",
+    "params": {
+      "C": 1.0
+    },
+    "id": "logistic|all_trend|20|expanding|{\"C\": 1.0}"
+  },
+  {
+    "model": "logistic",
+    "block": "all_trend",
+    "days": 20,
+    "policy": "expanding",
+    "phase": "tune",
+    "alternative": "tuning",
+    "params": {
+      "C": 10.0
+    },
+    "id": "logistic|all_trend|20|expanding|{\"C\": 10.0}"
+  },
+  {
+    "model": "ridge",
+    "block": "all_trend",
+    "days": 20,
+    "policy": "expanding",
+    "phase": "tune",
+    "alternative": "tuning",
+    "params": {
+      "alpha": 1.0
+    },
+    "id": "ridge|all_trend|20|expanding|{\"alpha\": 1.0}"
+  },
+  {
+    "model": "ridge",
+    "block": "all_trend",
+    "days": 20,
+    "policy": "expanding",
+    "phase": "tune",
+    "alternative": "tuning",
+    "params": {
+      "alpha": 100.0
+    },
+    "id": "ridge|all_trend|20|expanding|{\"alpha\": 100.0}"
+  },
+  {
+    "model": "ridge",
+    "block": "all_trend",
+    "days": 20,
+    "policy": "expanding",
+    "phase": "tune",
+    "alternative": "tuning",
+    "params": {
+      "alpha": 10000.0
+    },
+    "id": "ridge|all_trend|20|expanding|{\"alpha\": 10000.0}"
+  },
+  {
+    "model": "sgd",
+    "block": "all_trend",
+    "days": 20,
+    "policy": "expanding",
+    "phase": "tune",
+    "alternative": "tuning",
+    "params": {
+      "alpha": 0.001
+    },
+    "id": "sgd|all_trend|20|expanding|{\"alpha\": 0.001}"
+  },
+  {
+    "model": "sgd",
+    "block": "all_trend",
+    "days": 20,
+    "policy": "expanding",
+    "phase": "tune",
+    "alternative": "tuning",
+    "params": {
+      "alpha": 0.01
+    },
+    "id": "sgd|all_trend|20|expanding|{\"alpha\": 0.01}"
+  },
+  {
+    "model": "sgd",
+    "block": "all_trend",
+    "days": 20,
+    "policy": "expanding",
+    "phase": "tune",
+    "alternative": "tuning",
+    "params": {
+      "alpha": 0.1
+    },
+    "id": "sgd|all_trend|20|expanding|{\"alpha\": 0.1}"
+  },
+  {
+    "model": "linear_svm",
+    "block": "all_trend",
+    "days": 20,
+    "policy": "expanding",
+    "phase": "tune",
+    "alternative": "tuning",
+    "params": {
+      "C": 0.001
+    },
+    "id": "linear_svm|all_trend|20|expanding|{\"C\": 0.001}"
+  },
+  {
+    "model": "linear_svm",
+    "block": "all_trend",
+    "days": 20,
+    "policy": "expanding",
+    "phase": "tune",
+    "alternative": "tuning",
+    "params": {
+      "C": 0.01
+    },
+    "id": "linear_svm|all_trend|20|expanding|{\"C\": 0.01}"
+  },
+  {
+    "model": "linear_svm",
+    "block": "all_trend",
+    "days": 20,
+    "policy": "expanding",
+    "phase": "tune",
+    "alternative": "tuning",
+    "params": {
+      "C": 0.1
+    },
+    "id": "linear_svm|all_trend|20|expanding|{\"C\": 0.1}"
+  },
+  {
+    "model": "gaussian_nb",
+    "block": "A1_trend",
+    "days": 20,
+    "policy": "decay_2",
+    "phase": "tune",
+    "alternative": "tuning",
+    "params": {
+      "var_smoothing": 1e-09
+    },
+    "id": "gaussian_nb|A1_trend|20|decay_2|{\"var_smoothing\": 1e-09}"
+  },
+  {
+    "model": "gaussian_nb",
+    "block": "A1_trend",
+    "days": 20,
+    "policy": "decay_2",
+    "phase": "tune",
+    "alternative": "tuning",
+    "params": {
+      "var_smoothing": 1e-05
+    },
+    "id": "gaussian_nb|A1_trend|20|decay_2|{\"var_smoothing\": 1e-05}"
+  },
+  {
+    "model": "gaussian_nb",
+    "block": "A1_trend",
+    "days": 20,
+    "policy": "decay_2",
+    "phase": "tune",
+    "alternative": "tuning",
+    "params": {
+      "var_smoothing": 0.01
+    },
+    "id": "gaussian_nb|A1_trend|20|decay_2|{\"var_smoothing\": 0.01}"
+  },
+  {
+    "model": "decision_tree",
+    "block": "A1_trend",
+    "days": 20,
+    "policy": "expanding",
+    "phase": "tune",
+    "alternative": "tuning",
+    "params": {
+      "max_depth": 2,
+      "min_samples_leaf": 50
+    },
+    "id": "decision_tree|A1_trend|20|expanding|{\"max_depth\": 2, \"min_samples_leaf\": 50}"
+  },
+  {
+    "model": "decision_tree",
+    "block": "A1_trend",
+    "days": 20,
+    "policy": "expanding",
+    "phase": "tune",
+    "alternative": "tuning",
+    "params": {
+      "max_depth": 2,
+      "min_samples_leaf": 200
+    },
+    "id": "decision_tree|A1_trend|20|expanding|{\"max_depth\": 2, \"min_samples_leaf\": 200}"
+  },
+  {
+    "model": "decision_tree",
+    "block": "A1_trend",
+    "days": 20,
+    "policy": "expanding",
+    "phase": "tune",
+    "alternative": "tuning",
+    "params": {
+      "max_depth": 4,
+      "min_samples_leaf": 50
+    },
+    "id": "decision_tree|A1_trend|20|expanding|{\"max_depth\": 4, \"min_samples_leaf\": 50}"
+  },
+  {
+    "model": "decision_tree",
+    "block": "A1_trend",
+    "days": 20,
+    "policy": "expanding",
+    "phase": "tune",
+    "alternative": "tuning",
+    "params": {
+      "max_depth": 4,
+      "min_samples_leaf": 200
+    },
+    "id": "decision_tree|A1_trend|20|expanding|{\"max_depth\": 4, \"min_samples_leaf\": 200}"
+  },
+  {
+    "model": "decision_tree",
+    "block": "A1_trend",
+    "days": 20,
+    "policy": "expanding",
+    "phase": "tune",
+    "alternative": "tuning",
+    "params": {
+      "max_depth": 8,
+      "min_samples_leaf": 50
+    },
+    "id": "decision_tree|A1_trend|20|expanding|{\"max_depth\": 8, \"min_samples_leaf\": 50}"
+  },
+  {
+    "model": "decision_tree",
+    "block": "A1_trend",
+    "days": 20,
+    "policy": "expanding",
+    "phase": "tune",
+    "alternative": "tuning",
+    "params": {
+      "max_depth": 8,
+      "min_samples_leaf": 200
+    },
+    "id": "decision_tree|A1_trend|20|expanding|{\"max_depth\": 8, \"min_samples_leaf\": 200}"
+  },
+  {
+    "model": "random_forest",
+    "block": "all",
+    "days": 20,
+    "policy": "decay_1",
+    "phase": "tune",
+    "alternative": "tuning",
+    "params": {
+      "max_depth": 4,
+      "min_samples_leaf": 20
+    },
+    "id": "random_forest|all|20|decay_1|{\"max_depth\": 4, \"min_samples_leaf\": 20}"
+  },
+  {
+    "model": "random_forest",
+    "block": "all",
+    "days": 20,
+    "policy": "decay_1",
+    "phase": "tune",
+    "alternative": "tuning",
+    "params": {
+      "max_depth": 4,
+      "min_samples_leaf": 100
+    },
+    "id": "random_forest|all|20|decay_1|{\"max_depth\": 4, \"min_samples_leaf\": 100}"
+  },
+  {
+    "model": "random_forest",
+    "block": "all",
+    "days": 20,
+    "policy": "decay_1",
+    "phase": "tune",
+    "alternative": "tuning",
+    "params": {
+      "max_depth": 7,
+      "min_samples_leaf": 20
+    },
+    "id": "random_forest|all|20|decay_1|{\"max_depth\": 7, \"min_samples_leaf\": 20}"
+  },
+  {
+    "model": "random_forest",
+    "block": "all",
+    "days": 20,
+    "policy": "decay_1",
+    "phase": "tune",
+    "alternative": "tuning",
+    "params": {
+      "max_depth": 7,
+      "min_samples_leaf": 100
+    },
+    "id": "random_forest|all|20|decay_1|{\"max_depth\": 7, \"min_samples_leaf\": 100}"
+  },
+  {
+    "model": "random_forest",
+    "block": "all",
+    "days": 20,
+    "policy": "decay_1",
+    "phase": "tune",
+    "alternative": "tuning",
+    "params": {
+      "max_depth": null,
+      "min_samples_leaf": 20
+    },
+    "id": "random_forest|all|20|decay_1|{\"max_depth\": null, \"min_samples_leaf\": 20}"
+  },
+  {
+    "model": "random_forest",
+    "block": "all",
+    "days": 20,
+    "policy": "decay_1",
+    "phase": "tune",
+    "alternative": "tuning",
+    "params": {
+      "max_depth": null,
+      "min_samples_leaf": 100
+    },
+    "id": "random_forest|all|20|decay_1|{\"max_depth\": null, \"min_samples_leaf\": 100}"
+  },
+  {
+    "model": "extra_trees",
+    "block": "A1_trend",
+    "days": 20,
+    "policy": "decay_2",
+    "phase": "tune",
+    "alternative": "tuning",
+    "params": {
+      "max_depth": 4,
+      "min_samples_leaf": 20
+    },
+    "id": "extra_trees|A1_trend|20|decay_2|{\"max_depth\": 4, \"min_samples_leaf\": 20}"
+  },
+  {
+    "model": "extra_trees",
+    "block": "A1_trend",
+    "days": 20,
+    "policy": "decay_2",
+    "phase": "tune",
+    "alternative": "tuning",
+    "params": {
+      "max_depth": 4,
+      "min_samples_leaf": 100
+    },
+    "id": "extra_trees|A1_trend|20|decay_2|{\"max_depth\": 4, \"min_samples_leaf\": 100}"
+  },
+  {
+    "model": "extra_trees",
+    "block": "A1_trend",
+    "days": 20,
+    "policy": "decay_2",
+    "phase": "tune",
+    "alternative": "tuning",
+    "params": {
+      "max_depth": 7,
+      "min_samples_leaf": 20
+    },
+    "id": "extra_trees|A1_trend|20|decay_2|{\"max_depth\": 7, \"min_samples_leaf\": 20}"
+  },
+  {
+    "model": "extra_trees",
+    "block": "A1_trend",
+    "days": 20,
+    "policy": "decay_2",
+    "phase": "tune",
+    "alternative": "tuning",
+    "params": {
+      "max_depth": 7,
+      "min_samples_leaf": 100
+    },
+    "id": "extra_trees|A1_trend|20|decay_2|{\"max_depth\": 7, \"min_samples_leaf\": 100}"
+  },
+  {
+    "model": "extra_trees",
+    "block": "A1_trend",
+    "days": 20,
+    "policy": "decay_2",
+    "phase": "tune",
+    "alternative": "tuning",
+    "params": {
+      "max_depth": null,
+      "min_samples_leaf": 20
+    },
+    "id": "extra_trees|A1_trend|20|decay_2|{\"max_depth\": null, \"min_samples_leaf\": 20}"
+  },
+  {
+    "model": "extra_trees",
+    "block": "A1_trend",
+    "days": 20,
+    "policy": "decay_2",
+    "phase": "tune",
+    "alternative": "tuning",
+    "params": {
+      "max_depth": null,
+      "min_samples_leaf": 100
+    },
+    "id": "extra_trees|A1_trend|20|decay_2|{\"max_depth\": null, \"min_samples_leaf\": 100}"
+  },
+  {
+    "model": "gradient_boosting",
+    "block": "all",
+    "days": 20,
+    "policy": "expanding",
+    "phase": "tune",
+    "alternative": "tuning",
+    "params": {
+      "n_estimators": 60,
+      "max_depth": 1
+    },
+    "id": "gradient_boosting|all|20|expanding|{\"max_depth\": 1, \"n_estimators\": 60}"
+  },
+  {
+    "model": "gradient_boosting",
+    "block": "all",
+    "days": 20,
+    "policy": "expanding",
+    "phase": "tune",
+    "alternative": "tuning",
+    "params": {
+      "n_estimators": 60,
+      "max_depth": 2
+    },
+    "id": "gradient_boosting|all|20|expanding|{\"max_depth\": 2, \"n_estimators\": 60}"
+  },
+  {
+    "model": "gradient_boosting",
+    "block": "all",
+    "days": 20,
+    "policy": "expanding",
+    "phase": "tune",
+    "alternative": "tuning",
+    "params": {
+      "n_estimators": 120,
+      "max_depth": 1
+    },
+    "id": "gradient_boosting|all|20|expanding|{\"max_depth\": 1, \"n_estimators\": 120}"
+  },
+  {
+    "model": "gradient_boosting",
+    "block": "all",
+    "days": 20,
+    "policy": "expanding",
+    "phase": "tune",
+    "alternative": "tuning",
+    "params": {
+      "n_estimators": 120,
+      "max_depth": 2
+    },
+    "id": "gradient_boosting|all|20|expanding|{\"max_depth\": 2, \"n_estimators\": 120}"
+  },
+  {
+    "model": "hist_gradient_boosting",
+    "block": "A1_trend",
+    "days": 20,
+    "policy": "decay_2",
+    "phase": "tune",
+    "alternative": "tuning",
+    "params": {
+      "max_leaf_nodes": 3,
+      "l2_regularization": 1.0
+    },
+    "id": "hist_gradient_boosting|A1_trend|20|decay_2|{\"l2_regularization\": 1.0, \"max_leaf_nodes\": 3}"
+  },
+  {
+    "model": "hist_gradient_boosting",
+    "block": "A1_trend",
+    "days": 20,
+    "policy": "decay_2",
+    "phase": "tune",
+    "alternative": "tuning",
+    "params": {
+      "max_leaf_nodes": 3,
+      "l2_regularization": 10.0
+    },
+    "id": "hist_gradient_boosting|A1_trend|20|decay_2|{\"l2_regularization\": 10.0, \"max_leaf_nodes\": 3}"
+  },
+  {
+    "model": "hist_gradient_boosting",
+    "block": "A1_trend",
+    "days": 20,
+    "policy": "decay_2",
+    "phase": "tune",
+    "alternative": "tuning",
+    "params": {
+      "max_leaf_nodes": 7,
+      "l2_regularization": 1.0
+    },
+    "id": "hist_gradient_boosting|A1_trend|20|decay_2|{\"l2_regularization\": 1.0, \"max_leaf_nodes\": 7}"
+  },
+  {
+    "model": "hist_gradient_boosting",
+    "block": "A1_trend",
+    "days": 20,
+    "policy": "decay_2",
+    "phase": "tune",
+    "alternative": "tuning",
+    "params": {
+      "max_leaf_nodes": 7,
+      "l2_regularization": 10.0
+    },
+    "id": "hist_gradient_boosting|A1_trend|20|decay_2|{\"l2_regularization\": 10.0, \"max_leaf_nodes\": 7}"
+  },
+  {
+    "model": "hist_gradient_boosting",
+    "block": "A1_trend",
+    "days": 20,
+    "policy": "decay_2",
+    "phase": "tune",
+    "alternative": "tuning",
+    "params": {
+      "max_leaf_nodes": 15,
+      "l2_regularization": 1.0
+    },
+    "id": "hist_gradient_boosting|A1_trend|20|decay_2|{\"l2_regularization\": 1.0, \"max_leaf_nodes\": 15}"
+  },
+  {
+    "model": "hist_gradient_boosting",
+    "block": "A1_trend",
+    "days": 20,
+    "policy": "decay_2",
+    "phase": "tune",
+    "alternative": "tuning",
+    "params": {
+      "max_leaf_nodes": 15,
+      "l2_regularization": 10.0
+    },
+    "id": "hist_gradient_boosting|A1_trend|20|decay_2|{\"l2_regularization\": 10.0, \"max_leaf_nodes\": 15}"
+  },
+  {
+    "model": "adaboost",
+    "block": "A2",
+    "days": 14,
+    "policy": "decay_2",
+    "phase": "tune",
+    "alternative": "tuning",
+    "params": {
+      "n_estimators": 30,
+      "learning_rate": 0.05
+    },
+    "id": "adaboost|A2|14|decay_2|{\"learning_rate\": 0.05, \"n_estimators\": 30}"
+  },
+  {
+    "model": "adaboost",
+    "block": "A2",
+    "days": 14,
+    "policy": "decay_2",
+    "phase": "tune",
+    "alternative": "tuning",
+    "params": {
+      "n_estimators": 30,
+      "learning_rate": 0.3
+    },
+    "id": "adaboost|A2|14|decay_2|{\"learning_rate\": 0.3, \"n_estimators\": 30}"
+  },
+  {
+    "model": "adaboost",
+    "block": "A2",
+    "days": 14,
+    "policy": "decay_2",
+    "phase": "tune",
+    "alternative": "tuning",
+    "params": {
+      "n_estimators": 100,
+      "learning_rate": 0.05
+    },
+    "id": "adaboost|A2|14|decay_2|{\"learning_rate\": 0.05, \"n_estimators\": 100}"
+  },
+  {
+    "model": "adaboost",
+    "block": "A2",
+    "days": 14,
+    "policy": "decay_2",
+    "phase": "tune",
+    "alternative": "tuning",
+    "params": {
+      "n_estimators": 100,
+      "learning_rate": 0.3
+    },
+    "id": "adaboost|A2|14|decay_2|{\"learning_rate\": 0.3, \"n_estimators\": 100}"
+  },
+  {
+    "model": "mlp",
+    "block": "A1_trend",
+    "days": 20,
+    "policy": "expanding",
+    "phase": "tune",
+    "alternative": "tuning",
+    "params": {
+      "hidden_layer_sizes": [
+        8
+      ],
+      "alpha": 1.0
+    },
+    "id": "mlp|A1_trend|20|expanding|{\"alpha\": 1.0, \"hidden_layer_sizes\": [8]}"
+  },
+  {
+    "model": "mlp",
+    "block": "A1_trend",
+    "days": 20,
+    "policy": "expanding",
+    "phase": "tune",
+    "alternative": "tuning",
+    "params": {
+      "hidden_layer_sizes": [
+        8
+      ],
+      "alpha": 10.0
+    },
+    "id": "mlp|A1_trend|20|expanding|{\"alpha\": 10.0, \"hidden_layer_sizes\": [8]}"
+  },
+  {
+    "model": "mlp",
+    "block": "A1_trend",
+    "days": 20,
+    "policy": "expanding",
+    "phase": "tune",
+    "alternative": "tuning",
+    "params": {
+      "hidden_layer_sizes": [
+        32
+      ],
+      "alpha": 1.0
+    },
+    "id": "mlp|A1_trend|20|expanding|{\"alpha\": 1.0, \"hidden_layer_sizes\": [32]}"
+  },
+  {
+    "model": "mlp",
+    "block": "A1_trend",
+    "days": 20,
+    "policy": "expanding",
+    "phase": "tune",
+    "alternative": "tuning",
+    "params": {
+      "hidden_layer_sizes": [
+        32
+      ],
+      "alpha": 10.0
+    },
+    "id": "mlp|A1_trend|20|expanding|{\"alpha\": 10.0, \"hidden_layer_sizes\": [32]}"
+  },
+  {
+    "model": "rbf_approx",
+    "block": "A1_trend",
+    "days": 20,
+    "policy": "expanding",
+    "phase": "tune",
+    "alternative": "tuning",
+    "params": {
+      "C": 0.01
+    },
+    "id": "rbf_approx|A1_trend|20|expanding|{\"C\": 0.01}"
+  },
+  {
+    "model": "rbf_approx",
+    "block": "A1_trend",
+    "days": 20,
+    "policy": "expanding",
+    "phase": "tune",
+    "alternative": "tuning",
+    "params": {
+      "C": 0.1
+    },
+    "id": "rbf_approx|A1_trend|20|expanding|{\"C\": 0.1}"
+  },
+  {
+    "model": "rbf_approx",
+    "block": "A1_trend",
+    "days": 20,
+    "policy": "expanding",
+    "phase": "tune",
+    "alternative": "tuning",
+    "params": {
+      "C": 1.0
+    },
+    "id": "rbf_approx|A1_trend|20|expanding|{\"C\": 1.0}"
+  },
+  {
+    "model": "knn",
+    "block": "A1_trend",
+    "days": 14,
+    "policy": "sliding_1",
+    "phase": "tune",
+    "alternative": "tuning",
+    "params": {
+      "n_neighbors": 101
+    },
+    "id": "knn|A1_trend|14|sliding_1|{\"n_neighbors\": 101}"
+  },
+  {
+    "model": "knn",
+    "block": "A1_trend",
+    "days": 14,
+    "policy": "sliding_1",
+    "phase": "tune",
+    "alternative": "tuning",
+    "params": {
+      "n_neighbors": 301
+    },
+    "id": "knn|A1_trend|14|sliding_1|{\"n_neighbors\": 301}"
+  },
+  {
+    "model": "knn",
+    "block": "A1_trend",
+    "days": 14,
+    "policy": "sliding_1",
+    "phase": "tune",
+    "alternative": "tuning",
+    "params": {
+      "n_neighbors": 1001
+    },
+    "id": "knn|A1_trend|14|sliding_1|{\"n_neighbors\": 1001}"
+  },
+  {
+    "model": "lda",
+    "block": "all_trend",
+    "days": 20,
+    "policy": "expanding",
+    "phase": "tune",
+    "alternative": "tuning",
+    "params": {
+      "shrinkage": "auto"
+    },
+    "id": "lda|all_trend|20|expanding|{\"shrinkage\": \"auto\"}"
+  },
+  {
+    "model": "lda",
+    "block": "all_trend",
+    "days": 20,
+    "policy": "expanding",
+    "phase": "tune",
+    "alternative": "tuning",
+    "params": {
+      "shrinkage": 0.1
+    },
+    "id": "lda|all_trend|20|expanding|{\"shrinkage\": 0.1}"
+  },
+  {
+    "model": "lda",
+    "block": "all_trend",
+    "days": 20,
+    "policy": "expanding",
+    "phase": "tune",
+    "alternative": "tuning",
+    "params": {
+      "shrinkage": 0.5
+    },
+    "id": "lda|all_trend|20|expanding|{\"shrinkage\": 0.5}"
+  },
+  {
+    "model": "qda",
+    "block": "A1_trend",
+    "days": 20,
+    "policy": "expanding",
+    "phase": "tune",
+    "alternative": "tuning",
+    "params": {
+      "reg_param": 0.1
+    },
+    "id": "qda|A1_trend|20|expanding|{\"reg_param\": 0.1}"
+  },
+  {
+    "model": "qda",
+    "block": "A1_trend",
+    "days": 20,
+    "policy": "expanding",
+    "phase": "tune",
+    "alternative": "tuning",
+    "params": {
+      "reg_param": 0.5
+    },
+    "id": "qda|A1_trend|20|expanding|{\"reg_param\": 0.5}"
+  },
+  {
+    "model": "qda",
+    "block": "A1_trend",
+    "days": 20,
+    "policy": "expanding",
+    "phase": "tune",
+    "alternative": "tuning",
+    "params": {
+      "reg_param": 0.9
+    },
+    "id": "qda|A1_trend|20|expanding|{\"reg_param\": 0.9}"
+  },
+  {
+    "model": "logistic",
+    "block": "A1",
+    "days": 14,
+    "policy": "expanding",
+    "phase": "tune",
+    "alternative": "grid_blocks_C",
+    "params": {
+      "C": 0.0001
+    },
+    "id": "logistic|A1|14|expanding|{\"C\": 0.0001}"
+  },
+  {
+    "model": "logistic",
+    "block": "A1",
+    "days": 14,
+    "policy": "expanding",
+    "phase": "tune",
+    "alternative": "grid_blocks_C",
+    "params": {
+      "C": 0.001
+    },
+    "id": "logistic|A1|14|expanding|{\"C\": 0.001}"
+  },
+  {
+    "model": "logistic",
+    "block": "A1",
+    "days": 14,
+    "policy": "expanding",
+    "phase": "tune",
+    "alternative": "grid_blocks_C",
+    "params": {
+      "C": 0.01
+    },
+    "id": "logistic|A1|14|expanding|{\"C\": 0.01}"
+  },
+  {
+    "model": "logistic",
+    "block": "A1",
+    "days": 14,
+    "policy": "expanding",
+    "phase": "tune",
+    "alternative": "grid_blocks_C",
+    "params": {
+      "C": 0.1
+    },
+    "id": "logistic|A1|14|expanding|{\"C\": 0.1}"
+  },
+  {
+    "model": "logistic",
+    "block": "A1",
+    "days": 14,
+    "policy": "expanding",
+    "phase": "tune",
+    "alternative": "grid_blocks_C",
+    "params": {
+      "C": 1.0
+    },
+    "id": "logistic|A1|14|expanding|{\"C\": 1.0}"
+  },
+  {
+    "model": "logistic",
+    "block": "A1",
+    "days": 14,
+    "policy": "expanding",
+    "phase": "tune",
+    "alternative": "grid_blocks_C",
+    "params": {
+      "C": 10.0
+    },
+    "id": "logistic|A1|14|expanding|{\"C\": 10.0}"
+  },
+  {
+    "model": "logistic",
+    "block": "A2",
+    "days": 14,
+    "policy": "expanding",
+    "phase": "tune",
+    "alternative": "grid_blocks_C",
+    "params": {
+      "C": 0.0001
+    },
+    "id": "logistic|A2|14|expanding|{\"C\": 0.0001}"
+  },
+  {
+    "model": "logistic",
+    "block": "A2",
+    "days": 14,
+    "policy": "expanding",
+    "phase": "tune",
+    "alternative": "grid_blocks_C",
+    "params": {
+      "C": 0.001
+    },
+    "id": "logistic|A2|14|expanding|{\"C\": 0.001}"
+  },
+  {
+    "model": "logistic",
+    "block": "A2",
+    "days": 14,
+    "policy": "expanding",
+    "phase": "tune",
+    "alternative": "grid_blocks_C",
+    "params": {
+      "C": 0.01
+    },
+    "id": "logistic|A2|14|expanding|{\"C\": 0.01}"
+  },
+  {
+    "model": "logistic",
+    "block": "A2",
+    "days": 14,
+    "policy": "expanding",
+    "phase": "tune",
+    "alternative": "grid_blocks_C",
+    "params": {
+      "C": 0.1
+    },
+    "id": "logistic|A2|14|expanding|{\"C\": 0.1}"
+  },
+  {
+    "model": "logistic",
+    "block": "A2",
+    "days": 14,
+    "policy": "expanding",
+    "phase": "tune",
+    "alternative": "grid_blocks_C",
+    "params": {
+      "C": 1.0
+    },
+    "id": "logistic|A2|14|expanding|{\"C\": 1.0}"
+  },
+  {
+    "model": "logistic",
+    "block": "A2",
+    "days": 14,
+    "policy": "expanding",
+    "phase": "tune",
+    "alternative": "grid_blocks_C",
+    "params": {
+      "C": 10.0
+    },
+    "id": "logistic|A2|14|expanding|{\"C\": 10.0}"
+  },
+  {
+    "model": "logistic",
+    "block": "composition",
+    "days": 14,
+    "policy": "expanding",
+    "phase": "tune",
+    "alternative": "grid_blocks_C",
+    "params": {
+      "C": 0.0001
+    },
+    "id": "logistic|composition|14|expanding|{\"C\": 0.0001}"
+  },
+  {
+    "model": "logistic",
+    "block": "composition",
+    "days": 14,
+    "policy": "expanding",
+    "phase": "tune",
+    "alternative": "grid_blocks_C",
+    "params": {
+      "C": 0.001
+    },
+    "id": "logistic|composition|14|expanding|{\"C\": 0.001}"
+  },
+  {
+    "model": "logistic",
+    "block": "composition",
+    "days": 14,
+    "policy": "expanding",
+    "phase": "tune",
+    "alternative": "grid_blocks_C",
+    "params": {
+      "C": 0.01
+    },
+    "id": "logistic|composition|14|expanding|{\"C\": 0.01}"
+  },
+  {
+    "model": "logistic",
+    "block": "composition",
+    "days": 14,
+    "policy": "expanding",
+    "phase": "tune",
+    "alternative": "grid_blocks_C",
+    "params": {
+      "C": 0.1
+    },
+    "id": "logistic|composition|14|expanding|{\"C\": 0.1}"
+  },
+  {
+    "model": "logistic",
+    "block": "composition",
+    "days": 14,
+    "policy": "expanding",
+    "phase": "tune",
+    "alternative": "grid_blocks_C",
+    "params": {
+      "C": 1.0
+    },
+    "id": "logistic|composition|14|expanding|{\"C\": 1.0}"
+  },
+  {
+    "model": "logistic",
+    "block": "composition",
+    "days": 14,
+    "policy": "expanding",
+    "phase": "tune",
+    "alternative": "grid_blocks_C",
+    "params": {
+      "C": 10.0
+    },
+    "id": "logistic|composition|14|expanding|{\"C\": 10.0}"
+  },
+  {
+    "model": "logistic",
+    "block": "all",
+    "days": 14,
+    "policy": "expanding",
+    "phase": "tune",
+    "alternative": "grid_blocks_C",
+    "params": {
+      "C": 0.0001
+    },
+    "id": "logistic|all|14|expanding|{\"C\": 0.0001}"
+  },
+  {
+    "model": "logistic",
+    "block": "all",
+    "days": 14,
+    "policy": "expanding",
+    "phase": "tune",
+    "alternative": "grid_blocks_C",
+    "params": {
+      "C": 0.001
+    },
+    "id": "logistic|all|14|expanding|{\"C\": 0.001}"
+  },
+  {
+    "model": "logistic",
+    "block": "all",
+    "days": 14,
+    "policy": "expanding",
+    "phase": "tune",
+    "alternative": "grid_blocks_C",
+    "params": {
+      "C": 0.01
+    },
+    "id": "logistic|all|14|expanding|{\"C\": 0.01}"
+  },
+  {
+    "model": "logistic",
+    "block": "all",
+    "days": 14,
+    "policy": "expanding",
+    "phase": "tune",
+    "alternative": "grid_blocks_C",
+    "params": {
+      "C": 0.1
+    },
+    "id": "logistic|all|14|expanding|{\"C\": 0.1}"
+  },
+  {
+    "model": "logistic",
+    "block": "all",
+    "days": 14,
+    "policy": "expanding",
+    "phase": "tune",
+    "alternative": "grid_blocks_C",
+    "params": {
+      "C": 1.0
+    },
+    "id": "logistic|all|14|expanding|{\"C\": 1.0}"
+  },
+  {
+    "model": "logistic",
+    "block": "all",
+    "days": 14,
+    "policy": "expanding",
+    "phase": "tune",
+    "alternative": "grid_blocks_C",
+    "params": {
+      "C": 10.0
+    },
+    "id": "logistic|all|14|expanding|{\"C\": 10.0}"
+  }
+]

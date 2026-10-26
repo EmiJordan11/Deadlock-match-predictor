@@ -1,0 +1,15 @@
+{
+  "request": {
+    "endpoint": "/v1/analytics/hero-synergy-stats",
+    "params": {
+      "min_unix_timestamp": 1786060800,
+      "max_unix_timestamp": 1787788799,
+      "game_mode": "normal",
+      "match_mode": "ranked",
+      "min_matches": 1
+    }
+  },
+  "sha256": "ec83989da413676577299d43e47bdab809bfb912039193d2b3577db94dd06e17",
+  "retrieved_at": "2026-10-26T23:10:55.161822+00:00",
+  "rows": 703
+}

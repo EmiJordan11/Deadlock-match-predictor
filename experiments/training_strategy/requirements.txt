@@ -1,0 +1,9 @@
+pandas==3.0.3
+pyarrow==24.0.0
+numpy==2.4.6
+scikit-learn==1.9.1
+scipy==1.17.1
+joblib==1.6.0
+threadpoolctl==3.7.0
+requests==2.34.2
+pytest==9.1.0

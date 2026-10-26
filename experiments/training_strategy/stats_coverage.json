@@ -1,0 +1,30 @@
+[
+  {
+    "cut": "2026-08-20",
+    "request": {
+      "min_unix_timestamp": 1785456000,
+      "max_unix_timestamp": 1787183999,
+      "game_mode": "normal",
+      "match_mode": "ranked",
+      "min_matches": 1,
+      "bucket": "start_time_day"
+    },
+    "distinct_days": 20,
+    "first_day": "2026-07-31",
+    "last_day": "2026-08-19"
+  },
+  {
+    "cut": "2026-10-19",
+    "request": {
+      "min_unix_timestamp": 1790640000,
+      "max_unix_timestamp": 1792367999,
+      "game_mode": "normal",
+      "match_mode": "ranked",
+      "min_matches": 1,
+      "bucket": "start_time_day"
+    },
+    "distinct_days": 20,
+    "first_day": "2026-09-29",
+    "last_day": "2026-10-18"
+  }
+]

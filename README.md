@@ -1,5 +1,25 @@
 # airflow-deadlock
 
+## Experimentos de la Entrega 3
+
+La comparación temporal completa se encuentra en
+[resultados de entrenamiento](docs/resultados-experimentos-entrenamiento.md), con
+[todas las configuraciones](docs/resultados-experimentos-entrenamiento-completos.md)
+y [protocolo/comandos de reproducción](experiments/training_strategy/README.md).
+Las alternativas se ejecutan primero por separado y luego combinadas, sobre
+17 clasificadores. La validación usa pasado → futuro y reserva el 20/09 para
+el elegido. Octubre se evalúa como estrés posterior.
+
+El catálogo verificado el 26/10/2026 contiene 44 héroes: el esquema actual
+tiene 79 columnas totales y 72 predictoras. Los datos históricos de 73
+columnas se conservan como archivos anteriores. Los datasets nuevos están
+en `include/output/silver/corte=T/dias=N/k=K/features.parquet`, junto a
+`parametros.json` con configuración y hashes. El DAG exporta `dataset.csv`
+en esa misma partición. Las estadísticas crudas se separan por `stats/dias=N/`
+y solo se reutilizan si la petición y el hash coinciden.
+
+## Pipeline
+
 Pipeline de la Entrega 1 (Ingeniería de datos) del Proyecto Integrador -
 Ciencia de Datos, UTN FRM 2026. Construye el dataset de partidas de
 Deadlock que responde la pregunta del proyecto: *¿se puede saber quién gana
@@ -51,12 +71,12 @@ resolve_window
 ```
 
 - **Bronce** (`extract_*`): las respuestas crudas de la API, particionadas
-  por `corte=<T>`. Si el archivo ya existe para ese `T`, no se vuelve a
-  pedir nada -- correr el DAG dos veces con el mismo `fecha_corte` no
-  genera tráfico extra.
+  por `corte=<T>` y estadísticas por `dias=N`. El caché se reutiliza si
+  coinciden la petición y el contenido verificado; las distintas ventanas
+  no comparten archivos.
 - **Plata** (`build_stat_tables`, `build_matches_table`, `build_features`):
   las tablas de consulta con *shrinkage* ya aplicado, la base de partidas
-  parseada, y finalmente las 66 columnas de features.
+  parseada, y finalmente las features del catálogo actual.
 - **`quality_gate`**: los 6 chequeos medibles de la consigna. Si alguno
   falla, el DAG falla -- no se publica un CSV que no cumple.
 
@@ -82,7 +102,7 @@ completo está en el docstring de `dags/deadlock_ingest.py`.
 
 ```python
 import pandas as pd
-df = pd.read_csv("include/output/deadlock_<fecha>.csv")
+df = pd.read_parquet("include/output/silver/corte=2026-08-20/dias=14/k=100/features.parquet")
 
 df["match_id"].is_unique                       # clave sin duplicados
 len(df)                                         # volumen

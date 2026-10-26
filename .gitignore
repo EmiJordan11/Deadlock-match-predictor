@@ -7,6 +7,7 @@
 logs/
 __pycache__/
 *.pyc
+experiments_*.log
 
 # El respaldo fresco se regenera solo; la semilla (fifa_snapshot.csv) sí se versiona.
 include/frozen/ultimo_ok.csv

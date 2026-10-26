@@ -1,0 +1,14 @@
+{
+  "status": "ok",
+  "cv_matrix": 1224,
+  "cv_success": 1116,
+  "cv_unsupported": 108,
+  "stress_matrix": 1224,
+  "validated_datasets": 18,
+  "final_predictions_match_artifact": true,
+  "selection_precedes_test": true,
+  "original_test_preserved_during_posthoc_calibration": true,
+  "composition_window_negative_control": true,
+  "no_future_in_training": true,
+  "source_hashes_match": true
+}

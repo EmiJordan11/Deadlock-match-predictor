@@ -34,6 +34,8 @@ HEROES = [
     (65, "venator"), (66, "victor"), (67, "paige"), (69, "the_doorman"),
     (72, "billy"), (76, "graves"), (77, "apollo"), (79, "rem"),
     (80, "silver"), (81, "celeste"),
+    (78, "deadman_danny"), (84, "rat_king"), (85, "solomon"),
+    (86, "violet"), (87, "nurse_harrow"), (88, "baba"),
 ]
 HERO_IDS = {hero_id for hero_id, _ in HEROES}
 HERO_SLUG_BY_ID = dict(HEROES)
@@ -45,7 +47,7 @@ METADATA = [
     "average_badge", "average_badge_diff",
 ]
 
-COMPOSICION = [f"hero_{slug}" for _, slug in HEROES]                  # 38
+COMPOSICION = [f"hero_{slug}" for _, slug in HEROES]                  # 44 al 26/10/2026
 
 _AGREGADOS = ["mean", "min", "max", "std"]
 
@@ -59,13 +61,13 @@ HERO_WINRATE = [f"hero_winrate_adv_{agg}" for agg in _AGREGADOS]        # 4
 
 TARGET = ["winner"]
 
-COLUMNS = METADATA + COMPOSICION + COUNTER + SYNERGY + HERO_WINRATE + TARGET   # 6+38+20+4+4+1 = 73
+COLUMNS = METADATA + COMPOSICION + COUNTER + SYNERGY + HERO_WINRATE + TARGET   # 79
 
 # Columnas que SI entran a la matriz de entrenamiento (Unidad 3).
 # match_id/match_date son identificadores; game_mode/match_mode quedan
 # constantes por el filtro de descarga (Problema 6); average_badge y
 # average_badge_diff son metadatos de trazabilidad/filtrado, nunca features.
-FEATURE_COLUMNS = COMPOSICION + COUNTER + SYNERGY + HERO_WINRATE        # 66
+FEATURE_COLUMNS = COMPOSICION + COUNTER + SYNERGY + HERO_WINRATE        # 72
 
 # Columnas sin las cuales la fila no sirve (ver validate_bronze/quality_gate).
 OBLIGATORIAS = ["match_id", "match_date", "winner"] + COMPOSICION

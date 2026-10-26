@@ -45,6 +45,7 @@ un corte de red durante la clase.
 from __future__ import annotations
 
 import gzip
+import hashlib
 import json
 import logging
 import pickle
@@ -64,19 +65,40 @@ BRONCE_DIR = OUTPUT_DIR / "bronze"
 PLATA_DIR = OUTPUT_DIR / "silver"
 
 
-def _stats_bronze_path(corte: str, nombre: str) -> Path:
-    return BRONCE_DIR / f"corte={corte}" / "stats" / f"{nombre}.json"
+def _stats_bronze_path(corte: str, nombre: str, dias: int) -> Path:
+    return BRONCE_DIR / f"corte={corte}" / "stats" / f"dias={dias}" / f"{nombre}.json"
 
 
 def _matches_bronze_dir(corte: str) -> Path:
     return BRONCE_DIR / f"corte={corte}" / "matches"
 
 
-def _silver_dir(corte: str) -> Path:
-    return PLATA_DIR / f"corte={corte}"
+def _silver_dir(corte: str, dias: int, k: int) -> Path:
+    return PLATA_DIR / f"corte={corte}" / f"dias={dias}" / f"k={k}"
 
 
-def _bronce_stats_cacheado(destino: Path) -> list | None:
+def _stats_request(ventana: dict, nombre: str) -> dict:
+    endpoint = {"hero": "hero-stats", "counter": "hero-counter-stats",
+                "synergy": "hero-synergy-stats"}[nombre]
+    params = {"min_unix_timestamp": ventana["stats_min_ts"],
+              "max_unix_timestamp": ventana["stats_max_ts"],
+              "game_mode": "normal", "match_mode": "ranked",
+              "min_matches": ventana["min_matches_stats"]}
+    if nombre == "counter":
+        params["same_lane_filter"] = "false"
+    return {"endpoint": f"/v1/analytics/{endpoint}", "params": params}
+
+
+def _write_stats(destino: Path, datos: list, request: dict) -> None:
+    destino.parent.mkdir(parents=True, exist_ok=True)
+    destino.write_text(json.dumps(datos), encoding="utf-8")
+    meta = {"request": request, "rows": len(datos),
+            "sha256": hashlib.sha256(destino.read_bytes()).hexdigest(),
+            "retrieved_at": pendulum.now("UTC").isoformat()}
+    destino.with_suffix(".request.json").write_text(json.dumps(meta, indent=2), encoding="utf-8")
+
+
+def _bronce_stats_cacheado(destino: Path, request: dict) -> list | None:
     """Reusa un archivo de bronce de stats solo si existe Y tiene contenido.
 
     Un archivo vacio (`[]`) casi siempre es la marca de una corrida anterior
@@ -87,6 +109,12 @@ def _bronce_stats_cacheado(destino: Path) -> list | None:
     volver a pedirle nada a la API.
     """
     if not destino.exists():
+        return None
+    meta_path = destino.with_suffix(".request.json")
+    if not meta_path.exists():
+        return None  # No adivinar la ventana de un caché sin procedencia.
+    meta = json.loads(meta_path.read_text(encoding="utf-8"))
+    if meta.get("request") != request or meta.get("sha256") != hashlib.sha256(destino.read_bytes()).hexdigest():
         return None
     datos = json.loads(destino.read_text(encoding="utf-8"))
     return datos or None
@@ -159,10 +187,16 @@ def deadlock_ingest():
 
         ventana = {
             "fecha_corte": T.to_date_string(),
+            "dias_ventana_stats": params["dias_ventana_stats"],
+            "dias_ventana_matches": params["dias_ventana_matches"],
+            "k_shrinkage": params["k_shrinkage"],
+            "objetivo_filas": params["objetivo_filas"],
+            "min_matches_stats": params["min_matches_stats"],
+            "game_mode": "normal", "match_mode": "ranked",
             "stats_min_ts": int(stats_inicio.timestamp()),
-            "stats_max_ts": int(T.timestamp()),
+            "stats_max_ts": int(T.timestamp()) - 1,
             "matches_min_ts": int(T.timestamp()),
-            "matches_max_ts": int(matches_fin.timestamp()),
+            "matches_max_ts": int(matches_fin.timestamp()) - 1,
         }
         log.info("Ventana de estadisticas: %s -> %s (T)",
                  stats_inicio.to_date_string(), ventana["fecha_corte"])
@@ -173,48 +207,48 @@ def deadlock_ingest():
     @task(retries=3, retry_delay=pendulum.duration(seconds=30))
     def extract_hero_stats(ventana: dict, **context) -> str:
         """Bronce: /v1/analytics/hero-stats. Una sola llamada, los 38 heroes."""
-        destino = _stats_bronze_path(ventana["fecha_corte"], "hero_stats")
-        if not context["params"]["force"] and _bronce_stats_cacheado(destino) is not None:
+        destino = _stats_bronze_path(ventana["fecha_corte"], "hero_stats", ventana["dias_ventana_stats"])
+        request = _stats_request(ventana, "hero")
+        if not context["params"]["force"] and _bronce_stats_cacheado(destino, request) is not None:
             log.info("hero_stats ya en bronce (corte=%s), no se vuelve a pedir.",
                       ventana["fecha_corte"])
             return str(destino)
 
         datos = client.get_hero_stats(ventana["stats_min_ts"], ventana["stats_max_ts"],
                                         context["params"]["min_matches_stats"])
-        destino.parent.mkdir(parents=True, exist_ok=True)
-        destino.write_text(json.dumps(datos), encoding="utf-8")
+        _write_stats(destino, datos, request)
         log.info("hero_stats: %s heroes -> %s", len(datos), destino)
         return str(destino)
 
     @task(retries=3, retry_delay=pendulum.duration(seconds=30))
     def extract_counter_stats(ventana: dict, **context) -> str:
         """Bronce: /v1/analytics/hero-counter-stats. Matriz completa heroe-vs-heroe."""
-        destino = _stats_bronze_path(ventana["fecha_corte"], "counter_stats")
-        if not context["params"]["force"] and _bronce_stats_cacheado(destino) is not None:
+        destino = _stats_bronze_path(ventana["fecha_corte"], "counter_stats", ventana["dias_ventana_stats"])
+        request = _stats_request(ventana, "counter")
+        if not context["params"]["force"] and _bronce_stats_cacheado(destino, request) is not None:
             log.info("counter_stats ya en bronce (corte=%s), no se vuelve a pedir.",
                       ventana["fecha_corte"])
             return str(destino)
 
         datos = client.get_counter_stats(ventana["stats_min_ts"], ventana["stats_max_ts"],
                                            context["params"]["min_matches_stats"])
-        destino.parent.mkdir(parents=True, exist_ok=True)
-        destino.write_text(json.dumps(datos), encoding="utf-8")
+        _write_stats(destino, datos, request)
         log.info("counter_stats: %s pares -> %s", len(datos), destino)
         return str(destino)
 
     @task(retries=3, retry_delay=pendulum.duration(seconds=30))
     def extract_synergy_stats(ventana: dict, **context) -> str:
         """Bronce: /v1/analytics/hero-synergy-stats. Matriz completa de parejas del mismo equipo."""
-        destino = _stats_bronze_path(ventana["fecha_corte"], "synergy_stats")
-        if not context["params"]["force"] and _bronce_stats_cacheado(destino) is not None:
+        destino = _stats_bronze_path(ventana["fecha_corte"], "synergy_stats", ventana["dias_ventana_stats"])
+        request = _stats_request(ventana, "synergy")
+        if not context["params"]["force"] and _bronce_stats_cacheado(destino, request) is not None:
             log.info("synergy_stats ya en bronce (corte=%s), no se vuelve a pedir.",
                       ventana["fecha_corte"])
             return str(destino)
 
         datos = client.get_synergy_stats(ventana["stats_min_ts"], ventana["stats_max_ts"],
                                            context["params"]["min_matches_stats"])
-        destino.parent.mkdir(parents=True, exist_ok=True)
-        destino.write_text(json.dumps(datos), encoding="utf-8")
+        _write_stats(destino, datos, request)
         log.info("synergy_stats: %s pares -> %s", len(datos), destino)
         return str(destino)
 
@@ -298,9 +332,10 @@ def deadlock_ingest():
         synergy_stats = json.loads(Path(p_synergy).read_text(encoding="utf-8"))
 
         problemas = []
-        if len(hero_stats) != len(schema.HEROES):
-            problemas.append(f"hero_stats trajo {len(hero_stats)} heroes, "
-                              f"se esperaban {len(schema.HEROES)}")
+        # Un corte histórico no puede contener héroes que todavía no existían.
+        ids_stats = {r['hero_id'] for r in hero_stats}
+        if not ids_stats or not ids_stats <= schema.HERO_IDS:
+            problemas.append(f"hero_stats vacío o con héroes desconocidos: {ids_stats - schema.HERO_IDS}")
         if not counter_stats:
             problemas.append("hero-counter-stats vino vacio")
         if not synergy_stats:
@@ -326,8 +361,15 @@ def deadlock_ingest():
 
         tablas = _build_stat_tables(hero_stats, counter_stats, synergy_stats, k)
 
-        destino = _silver_dir(ventana["fecha_corte"]) / "stat_tables.pkl"
+        carpeta = _silver_dir(ventana["fecha_corte"], ventana["dias_ventana_stats"], k)
+        destino = carpeta / "stat_tables.pkl"
         destino.parent.mkdir(parents=True, exist_ok=True)
+        parametros = dict(ventana, hero_ids=sorted(schema.HERO_IDS))
+        parametros["stats_sources"] = [
+            {"path": str(p), "sha256": hashlib.sha256(Path(p).read_bytes()).hexdigest()}
+            for p in (p_hero, p_counter, p_synergy)
+        ]
+        (carpeta / "parametros.json").write_text(json.dumps(parametros, indent=2), encoding="utf-8")
         with open(destino, "wb") as f:
             pickle.dump(tablas, f)
 
@@ -367,7 +409,8 @@ def deadlock_ingest():
             raise ValueError("ninguna partida de la ventana paso el filtro de calidad")
 
         df = pd.DataFrame(filas)
-        destino = _silver_dir(ventana["fecha_corte"]) / "matches_base.parquet"
+        destino = _silver_dir(ventana["fecha_corte"], ventana["dias_ventana_stats"],
+                              ventana["k_shrinkage"]) / "matches_base.parquet"
         destino.parent.mkdir(parents=True, exist_ok=True)
         df.to_parquet(destino, index=False)
 
@@ -396,6 +439,10 @@ def deadlock_ingest():
 
         destino = Path(p_base).parent / "features.parquet"
         df.to_parquet(destino, index=False)
+        p_meta = destino.parent / "parametros.json"
+        parametros = json.loads(p_meta.read_text(encoding="utf-8"))
+        parametros["features_sha256"] = hashlib.sha256(destino.read_bytes()).hexdigest()
+        p_meta.write_text(json.dumps(parametros, indent=2), encoding="utf-8")
         log.info("features: %s filas x %s columnas -> %s", len(df), len(df.columns), destino)
         return str(destino)
 
@@ -435,12 +482,9 @@ def deadlock_ingest():
         import pandas as pd
 
         df = pd.read_parquet(p_features)
-        dag_run = context["dag_run"]
-        momento = dag_run.logical_date or dag_run.run_after
-        ds = momento.date().isoformat()
-
         OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-        destino = OUTPUT_DIR / f"deadlock_{ds}.csv"
+        # Cada combinación tiene su propia salida: dos ventanas no se pisan.
+        destino = Path(p_features).parent / "dataset.csv"
         df.to_csv(destino, index=False)
         log.info("Dataset final: %s filas x %s columnas -> %s", len(df), df.shape[1], destino)
         return str(destino)

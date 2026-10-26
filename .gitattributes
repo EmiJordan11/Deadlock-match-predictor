@@ -1,0 +1,5 @@
+# Los artefactos auditados conservan sus bytes y hashes en cualquier sistema.
+experiments/training_strategy/** -text
+include/output/bronze/**/stats/dias=*/** -text
+include/output/silver/**/dias=*/** -text
+include/output/heroes_api_2026-10-26*.json -text

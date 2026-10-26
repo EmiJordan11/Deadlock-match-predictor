@@ -1,5 +1,5 @@
 """
-De JSON crudo de la Deadlock API a las 73 columnas de schema.COLUMNS.
+De JSON crudo de la Deadlock API a las columnas de schema.COLUMNS.
 
 Dos pasos separados a proposito (ver docs/decisiones-diseno-dataset.md y el
 plan de la Entrega 1):
@@ -42,7 +42,7 @@ def parse_match(raw_match: dict) -> dict | None:
     Entrega 1):
       - algun equipo no tiene exactamente 6 heroes validos (abandono u
         otro dato parcial)
-      - hay un hero_id fuera del catalogo de 38 heroes activos
+      - hay un hero_id fuera del catalogo canonico de heroes activos
       - la partida no tiene un equipo ganador definido
 
     Nota sobre badges (verificado leyendo el bronce crudo, en ranked y en
@@ -74,6 +74,8 @@ def parse_match(raw_match: dict) -> dict | None:
             ranks_iniciales[team].append(rango)
 
     if len(equipos["Team0"]) != 6 or len(equipos["Team1"]) != 6:
+        return None
+    if len(set(equipos["Team0"] + equipos["Team1"])) != 12:
         return None
 
     winning_team = raw_match.get("winning_team")

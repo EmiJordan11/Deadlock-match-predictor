@@ -1,0 +1,26 @@
+{
+  "config": {
+    "model": "linear_svm",
+    "block": "all_trend",
+    "days": 20,
+    "policy": "expanding",
+    "phase": "tune",
+    "alternative": "tuning",
+    "params": {
+      "C": 0.1
+    },
+    "id": "linear_svm|all_trend|20|expanding|{\"C\": 0.1}"
+  },
+  "metrics": {
+    "auc": 0.6090596633154005,
+    "accuracy": 0.579115823164633,
+    "brier": null,
+    "logloss": null,
+    "fit_predict_seconds": 3.757602300000144,
+    "warnings": [],
+    "n_train": 50000,
+    "n_valid": 9998,
+    "n_features": 73,
+    "effective_n": 50000
+  }
+}
