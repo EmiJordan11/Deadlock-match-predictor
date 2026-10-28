@@ -23,11 +23,11 @@ def test_stats_ends_strictly_before_match_window():
     assert p['max_unix_timestamp']-p['min_unix_timestamp']+1==14*86400
 
 
-def test_vector_features_matches_canonical_with_new_hero():
+def test_vector_features_matches_canonical():
     ids=[i for i,_ in schema.HEROES]
-    bases=[dict(match_id=1,match_date='2026-10-19',game_mode='Normal',match_mode='Ranked',
+    bases=[dict(match_id=1,match_date='2026-09-20',game_mode='Normal',match_mode='Ranked',
                 average_badge=75.,average_badge_diff=None,winner='A',
-                heroes_a=ids[:5]+[88],heroes_b=ids[5:11])]
+                heroes_a=ids[:6],heroes_b=ids[6:12])]
     rng=np.random.default_rng(42)
     tables=dict(hero={h:rng.normal() for h in ids},
                 synergy={frozenset((a,b)):rng.normal() for a in ids for b in ids if a!=b},
@@ -38,7 +38,6 @@ def test_vector_features_matches_canonical_with_new_hero():
     actual=vector_features(bases,tables)
     np.testing.assert_allclose(actual[schema.FEATURE_COLUMNS].iloc[0],
                                [expected[c] for c in schema.FEATURE_COLUMNS],atol=1e-12)
-    assert actual.hero_baba.iloc[0]==1
 
 
 def test_repeated_heroes_rejected():

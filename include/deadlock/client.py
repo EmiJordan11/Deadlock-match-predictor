@@ -66,7 +66,7 @@ def _get(path: str, params: dict, retries: int = 3, backoff_s: float = 5.0,
 
 
 def get_hero_stats(min_ts: int, max_ts: int, min_matches: int = 1) -> list[dict]:
-    """/v1/analytics/hero-stats - tabla completa de heroes, una sola llamada."""
+    """/v1/analytics/hero-stats - 38 heroes, una sola llamada."""
     return _get("/v1/analytics/hero-stats", {
         "min_unix_timestamp": min_ts,
         "max_unix_timestamp": max_ts,

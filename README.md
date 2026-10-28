@@ -10,9 +10,9 @@ Las alternativas se ejecutan primero por separado y luego combinadas, sobre
 17 clasificadores. La validación usa pasado → futuro y reserva el 20/09 para
 el elegido. Octubre se evalúa como estrés posterior.
 
-El catálogo verificado el 26/10/2026 contiene 44 héroes: el esquema actual
-tiene 79 columnas totales y 72 predictoras. Los datos históricos de 73
-columnas se conservan como archivos anteriores. Los datasets nuevos están
+El esquema usa el catálogo de 38 héroes: 73 columnas totales y 66
+predictoras. Los cortes de la Entrega 3 se eligieron en fechas en las que
+los héroes posteriores todavía no existían. Los datasets nuevos están
 en `include/output/silver/corte=T/dias=N/k=K/features.parquet`, junto a
 `parametros.json` con configuración y hashes. El DAG exporta `dataset.csv`
 en esa misma partición. Las estadísticas crudas se separan por `stats/dias=N/`
