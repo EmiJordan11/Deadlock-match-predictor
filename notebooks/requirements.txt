@@ -1,7 +1,7 @@
 # Dependencias para correr los notebooks de las Entregas 2 y 3 (fuera de la imagen de Airflow).
 pandas>=2.2
 pyarrow>=17.0
-numpy>=1.26
+numpy>=2.0   # el scipy actual (1.18) que trae scikit-learn no importa con numpy 1.x
 matplotlib>=3.8
 jinja2>=3.1
 scikit-learn>=1.5
