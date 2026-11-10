@@ -56,6 +56,37 @@ GitHub Pages sirve la carpeta `docs/` de la rama `main`: en el repositorio,
 carpeta `/docs`. Cada `git push` con un `docs/index.html` nuevo actualiza la URL.
 Para verla localmente alcanza con abrir `docs/index.html` en el navegador.
 
+## Héroes nuevos: el catálogo de cada corte
+
+Valve agrega héroes cada pocas semanas. Con el catálogo fijo de 38, el filtro
+de calidad descartaba toda partida con un héroe nuevo: el 19/10 quedaban 60
+de 10.000. Ahora el DAG arma el catálogo de cada corte (`build_catalogo`,
+módulo `include/deadlock/catalogo.py`) con tres fuentes:
+
+1. `/v1/assets/heroes`: los héroes jugables. No se filtra por
+   `in_development`: Violet y Baba tienen esa marca y se juegan en ranked.
+2. Las estadísticas de la ventana: los héroes jugados antes del corte.
+3. Las partidas del corte: un héroe recién lanzado puede aparecer acá antes
+   que en las otras dos.
+
+Cada héroe es una columna de composición (+1/−1/0); uno que no se jugó en un
+corte tiene su columna en cero, así que juntar cortes con catálogos
+distintos es completar con 0. El registro
+(`include/output/silver/catalogo_dinamico/registro_heroes.json`) le fija a
+cada héroe un nombre de columna la primera vez que aparece y no lo cambia
+nunca. Si aparece un héroe que el registro no tenía, el log de
+`build_catalogo` lo avisa con un `HEROES NUEVOS`. Un héroe que se juega sin
+tener estadísticas todavía aporta ventaja 0 (neutra) a las 28 ventajas.
+
+La salida va a `include/output/silver/catalogo_dinamico/corte=T/dias=N/k=K/`:
+`features.parquet` y `dataset.csv`, `catalogo.json` (qué héroes tiene el
+corte, cuántas partidas jugó cada uno, si tiene estadísticas) y
+`filtro_calidad.json` (cuántas partidas se descartaron y por qué). Los cortes
+de la Entrega 3 (`silver/corte=T/`, 38 héroes) no se tocan: el notebook de
+modelado, la aplicación y los experimentos siguen dando los mismos números.
+Correr el DAG sobre una fecha de la Entrega 3 da las mismas 73 columnas de
+siempre más las de los héroes nuevos, todas en cero.
+
 ## Experimentos de la Entrega 3
 
 La comparación temporal completa se encuentra en
@@ -66,9 +97,10 @@ Las alternativas se ejecutan primero por separado y luego combinadas, sobre
 17 clasificadores. La validación usa pasado → futuro y reserva el 20/09 para
 el elegido. Octubre se evalúa como estrés posterior.
 
-El esquema usa el catálogo de 38 héroes: 73 columnas totales y 66
-predictoras. Los cortes de la Entrega 3 se eligieron en fechas en las que
-los héroes posteriores todavía no existían. Los datasets nuevos están
+Los cortes de la Entrega 3 usan el catálogo de 38 héroes: 73 columnas
+totales y 66 predictoras. Se eligieron en fechas en las que los héroes
+posteriores todavía no existían. El DAG ya no depende de ese catálogo (ver
+«Héroes nuevos: el catálogo de cada corte»). Los datasets nuevos están
 en `include/output/silver/corte=T/dias=N/k=K/features.parquet`, junto a
 `parametros.json` con configuración y hashes. El DAG exporta `dataset.csv`
 en esa misma partición. Las estadísticas crudas se separan por `stats/dias=N/`

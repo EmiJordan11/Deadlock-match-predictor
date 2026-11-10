@@ -5,9 +5,22 @@ Construye el dataset de partidas de Deadlock (deadlock-api.com) para
 responder la pregunta del proyecto: ¿se puede saber quien gana una partida
 sabiendo solo la composicion de heroes de los dos equipos?
 
-El diseño completo de las 73 columnas, y por que cada una es como es, esta
+El diseño completo de las columnas, y por que cada una es como es, esta
 documentado en docs/decisiones-diseno-dataset.md y
 docs/estructura-dataset-final.md. Este DAG materializa esas decisiones.
+
+**Catalogo de heroes por corte.** Valve agrega heroes cada pocas semanas.
+El DAG ya no usa una lista fija: `build_catalogo` arma el catalogo de cada
+corte con la API de assets, las estadisticas de la ventana y las partidas
+(ver `deadlock.catalogo`), y una columna de composicion por heroe. Si
+aparece un heroe que el registro no tenia, lo agrega con un nombre de
+columna que ya no cambia y lo avisa en el log. Las 28 ventajas no cambian:
+son agregados sobre los heroes de cada equipo.
+
+La plata va a `silver/catalogo_dinamico/`, separada de los cortes de la
+Entrega 3 (`silver/corte=T/`, 38 heroes), que leen el notebook de modelado,
+la aplicacion y los experimentos: correr este DAG no cambia ninguno de esos
+resultados.
 
 **Dos ventanas de tiempo que no se solapan** (Problema 3 -- fuga de datos):
 una fecha de corte `T` separa las estadisticas historicas de heroes (todo lo
@@ -54,19 +67,32 @@ from pathlib import Path
 import pendulum
 from airflow.sdk import Param, dag, task
 
+from deadlock import catalogo as cat
 from deadlock import client, schema
-from deadlock.transform import build_match_row, parse_match
+from deadlock.transform import MOTIVOS_DESCARTE, build_match_row, motivo_descarte, parse_match
 from deadlock.transform import build_stat_tables as _build_stat_tables
 
 log = logging.getLogger(__name__)
 
 OUTPUT_DIR = Path("/usr/local/airflow/include/output")
 BRONCE_DIR = OUTPUT_DIR / "bronze"
-PLATA_DIR = OUTPUT_DIR / "silver"
+# La plata con el catalogo de cada corte. Los cortes de la Entrega 3 quedan en
+# silver/corte=T/ con sus 38 heroes y no se tocan.
+PLATA_DIR = OUTPUT_DIR / "silver" / "catalogo_dinamico"
+REGISTRO_HEROES = PLATA_DIR / "registro_heroes.json"
 
 
 def _stats_bronze_path(corte: str, nombre: str, dias: int) -> Path:
     return BRONCE_DIR / f"corte={corte}" / "stats" / f"dias={dias}" / f"{nombre}.json"
+
+
+def _heroes_bronze_path(corte: str) -> Path:
+    return BRONCE_DIR / f"corte={corte}" / "heroes" / "heroes.json"
+
+
+def _leer_pagina(ruta: str) -> list[dict]:
+    with gzip.open(ruta, "rt", encoding="utf-8") as f:
+        return json.load(f)
 
 
 def _matches_bronze_dir(corte: str) -> Path:
@@ -128,6 +154,9 @@ def _bronce_stats_cacheado(destino: Path, request: dict) -> list | None:
     schedule=None,
     start_date=pendulum.datetime(2026, 9, 1, tz="America/Argentina/Buenos_Aires"),
     catchup=False,
+    # Una corrida a la vez: comparten el registro de heroes y el limite de
+    # 10 pedidos por minuto de /v1/matches/metadata.
+    max_active_runs=1,
     tags=["ciencia-de-datos", "unidad-1", "dataset-canonico", "deadlock"],
     doc_md=__doc__,
     params={
@@ -205,8 +234,27 @@ def deadlock_ingest():
         return ventana
 
     @task(retries=3, retry_delay=pendulum.duration(seconds=30))
+    def extract_heroes(ventana: dict, **context) -> str:
+        """Bronce: /v1/assets/heroes, los heroes del juego (nombre, imagenes, si es jugable).
+
+        La API devuelve el estado de HOY, no el del corte. Se guarda una vez
+        por corte y se reusa, para que volver a correr el mismo corte arme
+        el mismo catalogo.
+        """
+        destino = _heroes_bronze_path(ventana["fecha_corte"])
+        request = client.HEROES_REQUEST
+        if not context["params"]["force"] and _bronce_stats_cacheado(destino, request) is not None:
+            log.info("heroes ya en bronce (corte=%s), no se vuelve a pedir.", ventana["fecha_corte"])
+            return str(destino)
+
+        datos = client.get_heroes()
+        _write_stats(destino, datos, request)
+        log.info("heroes: %s en la API de assets -> %s", len(datos), destino)
+        return str(destino)
+
+    @task(retries=3, retry_delay=pendulum.duration(seconds=30))
     def extract_hero_stats(ventana: dict, **context) -> str:
-        """Bronce: /v1/analytics/hero-stats. Una sola llamada, los 38 heroes."""
+        """Bronce: /v1/analytics/hero-stats. Una sola llamada, una fila por heroe jugado."""
         destino = _stats_bronze_path(ventana["fecha_corte"], "hero_stats", ventana["dias_ventana_stats"])
         request = _stats_request(ventana, "hero")
         if not context["params"]["force"] and _bronce_stats_cacheado(destino, request) is not None:
@@ -324,18 +372,24 @@ def deadlock_ingest():
 
     @task
     def validate_bronze(p_hero: str, p_counter: str, p_synergy: str,
-                          rutas_matches: list[str]) -> bool:
+                          rutas_matches: list[str], p_heroes: str) -> bool:
         """Chequeos duros sobre el bronce. Si algo esta mal, falla acá y no
-        se gasta trabajo armando la plata sobre datos rotos."""
+        se gasta trabajo armando la plata sobre datos rotos.
+
+        Ya no se exige que los heroes de las estadisticas esten en una lista
+        fija: un heroe nuevo es un dato valido, no un error. El catalogo lo
+        arma build_catalogo.
+        """
         hero_stats = json.loads(Path(p_hero).read_text(encoding="utf-8"))
         counter_stats = json.loads(Path(p_counter).read_text(encoding="utf-8"))
         synergy_stats = json.loads(Path(p_synergy).read_text(encoding="utf-8"))
+        heroes_api = json.loads(Path(p_heroes).read_text(encoding="utf-8"))
 
         problemas = []
-        # Un corte histórico no puede contener héroes que todavía no existían.
-        ids_stats = {r['hero_id'] for r in hero_stats}
-        if not ids_stats or not ids_stats <= schema.HERO_IDS:
-            problemas.append(f"hero_stats vacío o con héroes desconocidos: {ids_stats - schema.HERO_IDS}")
+        if not hero_stats:
+            problemas.append("hero-stats vino vacio")
+        if not cat.jugables(heroes_api):
+            problemas.append("la API de assets no devolvio ningun heroe jugable")
         if not counter_stats:
             problemas.append("hero-counter-stats vino vacio")
         if not synergy_stats:
@@ -351,8 +405,48 @@ def deadlock_ingest():
         return True
 
     @task
+    def build_catalogo(p_heroes: str, p_hero: str, rutas_matches: list[str], ventana: dict) -> dict:
+        """Plata: el catalogo de heroes del corte. Es la tarea que reacciona a los heroes nuevos.
+
+        Junta los heroes jugables de la API de assets, los que tienen
+        estadisticas en la ventana y los que aparecen en las partidas. Un
+        heroe que el registro no tenia se agrega con un nombre de columna
+        que ya no cambia, y se avisa en el log. Devuelve el catalogo (lo
+        usan las tareas siguientes) y lo guarda como catalogo.json junto a
+        las features.
+        """
+        heroes_api = json.loads(Path(p_heroes).read_text(encoding="utf-8"))
+        hero_stats = json.loads(Path(p_hero).read_text(encoding="utf-8"))
+        en_partidas = cat.apariciones(raw for ruta in rutas_matches for raw in _leer_pagina(ruta))
+
+        registro = cat.cargar_registro(REGISTRO_HEROES)
+        catalogo = cat.armar_catalogo(heroes_api, hero_stats, en_partidas, registro, ventana["fecha_corte"])
+        cat.guardar_registro(REGISTRO_HEROES, registro)
+
+        carpeta = _silver_dir(ventana["fecha_corte"], ventana["dias_ventana_stats"], ventana["k_shrinkage"])
+        carpeta.mkdir(parents=True, exist_ok=True)
+        (carpeta / "catalogo.json").write_text(json.dumps(catalogo, indent=2, ensure_ascii=False), encoding="utf-8")
+
+        nombre = {d["id"]: d["nombre"] for d in catalogo["detalle"]}
+        log.info("Catalogo del corte %s: %s heroes (%s columnas de composicion) -> %s",
+                  ventana["fecha_corte"], len(catalogo["heroes"]), len(catalogo["heroes"]), carpeta / "catalogo.json")
+        if catalogo["nuevos_en_registro"]:
+            log.warning("HEROES NUEVOS, agregados al registro: %s",
+                        ", ".join(f"{i} {nombre[i]}" for i in catalogo["nuevos_en_registro"]))
+        if catalogo["fuera_del_catalogo_entrega3"]:
+            log.info("Fuera del catalogo de la Entrega 3: %s",
+                      ", ".join(f"{i} {nombre[i]} ({en_partidas.get(i, 0)} partidas)" for i in catalogo["fuera_del_catalogo_entrega3"]))
+        if catalogo["sin_estadisticas"]:
+            log.warning("Se jugaron sin estadisticas en la ventana (su ventaja de winrate vale 0, neutra): %s",
+                        ", ".join(f"{i} {nombre[i]}" for i in catalogo["sin_estadisticas"]))
+        if catalogo["fuera_de_la_api"]:
+            log.warning("No estan en la API de assets (nombre provisorio): %s",
+                        ", ".join(f"{i} {nombre[i]}" for i in catalogo["fuera_de_la_api"]))
+        return catalogo
+
+    @task
     def build_stat_tables(p_hero: str, p_counter: str, p_synergy: str,
-                            ventana: dict, **context) -> str:
+                            ventana: dict, catalogo: dict, **context) -> str:
         """Plata: aplica shrinkage y arma las 3 tablas de consulta. No toca la red."""
         hero_stats = json.loads(Path(p_hero).read_text(encoding="utf-8"))
         counter_stats = json.loads(Path(p_counter).read_text(encoding="utf-8"))
@@ -364,7 +458,7 @@ def deadlock_ingest():
         carpeta = _silver_dir(ventana["fecha_corte"], ventana["dias_ventana_stats"], k)
         destino = carpeta / "stat_tables.pkl"
         destino.parent.mkdir(parents=True, exist_ok=True)
-        parametros = dict(ventana, hero_ids=sorted(schema.HERO_IDS))
+        parametros = dict(ventana, hero_ids=[i for i, _ in cat.heroes_de(catalogo)])
         parametros["stats_sources"] = [
             {"path": str(p), "sha256": hashlib.sha256(Path(p).read_bytes()).hexdigest()}
             for p in (p_hero, p_counter, p_synergy)
@@ -378,64 +472,73 @@ def deadlock_ingest():
         return str(destino)
 
     @task
-    def build_matches_table(rutas: list[str], ventana: dict) -> str:
+    def build_matches_table(rutas: list[str], ventana: dict, catalogo: dict) -> str:
         """Plata: de las paginas de bronce a una fila por partida, con filtro de calidad.
 
-        Descarta partidas con algun equipo incompleto, heroes fuera de
-        catalogo, o sin ganador definido -- y loguea cuantas se descartaron
-        por cada motivo, que es el numero que hay que llevar a la defensa
-        para explicar cualquier diferencia entre "partidas pedidas" y
-        "filas en el CSV final".
+        Descarta partidas con algun equipo incompleto, un heroe repetido o
+        sin ganador definido -- y cuenta cuantas se descartaron por cada
+        motivo (filtro_calidad.json y el log), que es el numero que hay que
+        llevar a la defensa para explicar cualquier diferencia entre
+        "partidas pedidas" y "filas en el CSV final". Los heroes se validan
+        contra el catalogo del corte, asi que un heroe nuevo ya no es motivo
+        de descarte.
 
-        Todavia NO calcula las 66 features: solo deja heroes_a/heroes_b
+        Todavia NO calcula las features: solo deja heroes_a/heroes_b
         (listas de hero_id) listas para que build_features las cruce
         contra las tablas de stats.
         """
         import pandas as pd
 
-        filas, leidas, descartadas = [], 0, 0
+        hero_ids = {i for i, _ in cat.heroes_de(catalogo)}
+        filas, motivos = [], dict.fromkeys(MOTIVOS_DESCARTE, 0)
+        leidas = 0
         for ruta in rutas:
             with gzip.open(ruta, "rt", encoding="utf-8") as f:
                 lote = json.load(f)
             for raw in lote:
                 leidas += 1
-                base = parse_match(raw)
-                if base is None:
-                    descartadas += 1
+                motivo = motivo_descarte(raw, hero_ids)
+                if motivo is not None:
+                    motivos[motivo] += 1
                     continue
-                filas.append(base)
+                filas.append(parse_match(raw, hero_ids))
 
         if not filas:
             raise ValueError("ninguna partida de la ventana paso el filtro de calidad")
 
         df = pd.DataFrame(filas)
-        destino = _silver_dir(ventana["fecha_corte"], ventana["dias_ventana_stats"],
-                              ventana["k_shrinkage"]) / "matches_base.parquet"
+        carpeta = _silver_dir(ventana["fecha_corte"], ventana["dias_ventana_stats"], ventana["k_shrinkage"])
+        destino = carpeta / "matches_base.parquet"
         destino.parent.mkdir(parents=True, exist_ok=True)
         df.to_parquet(destino, index=False)
+        filtro = {"leidas": leidas, "descartadas": dict(motivos), "en_la_tabla_base": len(df)}
+        (carpeta / "filtro_calidad.json").write_text(json.dumps(filtro, indent=2), encoding="utf-8")
 
-        log.info("%s partidas leidas, %s descartadas por el filtro de calidad, "
-                  "%s en la tabla base -> %s", leidas, descartadas, len(df), destino)
+        log.info("%s partidas leidas, %s descartadas por el filtro de calidad %s, "
+                  "%s en la tabla base -> %s", leidas, sum(motivos.values()), motivos, len(df), destino)
         return str(destino)
 
     @task
-    def build_features(p_base: str, p_tablas: str) -> str:
-        """Plata: cruza la base de partidas contra las tablas de stats -> 66 features.
+    def build_features(p_base: str, p_tablas: str, catalogo: dict) -> str:
+        """Plata: cruza la base de partidas contra las tablas de stats -> features.
 
-        Es la unica tarea que sabe el esquema completo de 73 columnas
-        (schema.COLUMNS). Si algun dia cambia k_shrinkage, alcanza con
-        re-correr build_stat_tables + esta tarea: no hace falta volver a
-        pedirle nada a la API ni reparsear el bronce de partidas.
+        Es la unica tarea que sabe el esquema completo (schema.columnas del
+        catalogo del corte): una columna de composicion por heroe del
+        catalogo, mas las 28 ventajas, los metadatos y el ganador. Si algun
+        dia cambia k_shrinkage, alcanza con re-correr build_stat_tables +
+        esta tarea: no hace falta volver a pedirle nada a la API ni
+        reparsear el bronce de partidas.
         """
         import pandas as pd
 
+        heroes = cat.heroes_de(catalogo)
         base_df = pd.read_parquet(p_base)
         with open(p_tablas, "rb") as f:
             tablas = pickle.load(f)
 
-        filas = [build_match_row(fila.to_dict(), tablas)
+        filas = [build_match_row(fila.to_dict(), tablas, heroes)
                  for _, fila in base_df.iterrows()]
-        df = pd.DataFrame(filas)[schema.COLUMNS]
+        df = pd.DataFrame(filas)[schema.columnas(heroes)]
 
         destino = Path(p_base).parent / "features.parquet"
         df.to_parquet(destino, index=False)
@@ -447,11 +550,12 @@ def deadlock_ingest():
         return str(destino)
 
     @task
-    def quality_gate(p_features: str) -> str:
+    def quality_gate(p_features: str, catalogo: dict) -> str:
         """Los 6 chequeos medibles de la Entrega 1. Si alguno falla, el DAG falla."""
         import pandas as pd
 
         df = pd.read_parquet(p_features)
+        heroes = cat.heroes_de(catalogo)
 
         problemas = []
         if not df["match_id"].is_unique:
@@ -463,7 +567,10 @@ def deadlock_ingest():
         columnas_vacias = df.columns[df.isna().all()].tolist()
         if columnas_vacias:
             problemas.append(f"columnas 100% nulas: {columnas_vacias}")
-        for c in schema.OBLIGATORIAS:
+        faltan = [c for c in schema.columnas(heroes) if c not in df.columns]
+        if faltan:
+            problemas.append(f"faltan columnas del catalogo: {faltan}")
+        for c in schema.obligatorias(heroes):
             if c in df.columns and df[c].isna().any():
                 problemas.append(f"{c} tiene {df[c].isna().sum()} nulos y no deberia")
 
@@ -490,20 +597,23 @@ def deadlock_ingest():
         return str(destino)
 
     ventana = resolve_window()
+    p_heroes = extract_heroes(ventana)
     p_hero = extract_hero_stats(ventana)
     p_counter = extract_counter_stats(ventana)
     p_synergy = extract_synergy_stats(ventana)
     p_matches = extract_matches(ventana)
 
-    bronce_ok = validate_bronze(p_hero, p_counter, p_synergy, p_matches)
+    bronce_ok = validate_bronze(p_hero, p_counter, p_synergy, p_matches, p_heroes)
 
-    p_tablas = build_stat_tables(p_hero, p_counter, p_synergy, ventana)
-    p_base = build_matches_table(p_matches, ventana)
+    catalogo = build_catalogo(p_heroes, p_hero, p_matches, ventana)
     # Unica dependencia declarada a mano: no construir plata sin validar el
-    # bronce primero. El resto del grafo se infiere de pasarse argumentos.
-    bronce_ok >> [p_tablas, p_base]
+    # bronce primero. El resto del grafo se infiere de pasarse argumentos
+    # (toda la plata recibe el catalogo, que espera a la validacion).
+    bronce_ok >> catalogo
 
-    export_csv(quality_gate(build_features(p_base, p_tablas)))
+    p_tablas = build_stat_tables(p_hero, p_counter, p_synergy, ventana, catalogo)
+    p_base = build_matches_table(p_matches, ventana, catalogo)
+    export_csv(quality_gate(build_features(p_base, p_tablas, catalogo), catalogo))
 
 
 deadlock_ingest()

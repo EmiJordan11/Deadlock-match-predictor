@@ -19,10 +19,16 @@ materializa:
 Unidad de observacion: una partida (ranked, modo normal). Clave: match_id.
 """
 
-# --- catalogo de heroes, relevado en vivo de /v1/assets/heroes ---------------
-# (id, slug). Si Valve agrega un heroe nuevo despues de esta corrida, hay que
-# regenerar esta lista antes de correr el pipeline: HEROES no se arma
-# dinamicamente para que el esquema del CSV sea estable entre corridas.
+# --- catalogo de la Entrega 3: los 38 heroes de agosto/septiembre 2026 -------
+# (id, slug). Es el catalogo CONGELADO con el que se construyeron los cortes
+# del 20/08 al 20/09, el notebook entrega3_modelado_v3 y la aplicacion de la
+# Entrega 4: no se toca, para que esos resultados se puedan reproducir.
+#
+# El DAG ya no depende de esta lista: arma el catalogo de cada corte con
+# deadlock.catalogo (heroes de la API de assets + los que aparecen en las
+# estadisticas y en las partidas), asi que sigue funcionando cuando Valve
+# agrega heroes. Estos 38 slugs son la semilla del registro de heroes: un
+# heroe conserva su nombre de columna para siempre.
 HEROES = [
     (1, "infernus"), (2, "seven"), (3, "vindicta"), (4, "lady_geist"),
     (6, "abrams"), (7, "wraith"), (8, "mcginnis"), (10, "paradox"),
@@ -74,3 +80,28 @@ ENTEROS = ["match_id"] + COMPOSICION
 TEXTO = ["game_mode", "match_mode", "winner"]
 FECHA = ["match_date"]
 FLOTANTES = ["average_badge", "average_badge_diff"] + COUNTER + SYNERGY + HERO_WINRATE
+
+
+# --- el mismo esquema para cualquier catalogo -----------------------------------
+# Lo usa el DAG con el catalogo de cada corte. Con el catalogo de la Entrega 3
+# devuelve exactamente las constantes de arriba. Solo cambia el bloque de
+# composicion: las 28 ventajas son agregados y no dependen de cuantos heroes hay.
+
+def composicion(heroes=HEROES) -> list[str]:
+    """Una columna +1/-1/0 por heroe del catalogo, en el orden del catalogo (por id)."""
+    return [f"hero_{slug}" for _, slug in heroes]
+
+
+def columnas(heroes=HEROES) -> list[str]:
+    return METADATA + composicion(heroes) + COUNTER + SYNERGY + HERO_WINRATE + TARGET
+
+
+def feature_columns(heroes=HEROES) -> list[str]:
+    return composicion(heroes) + COUNTER + SYNERGY + HERO_WINRATE
+
+
+def obligatorias(heroes=HEROES) -> list[str]:
+    return ["match_id", "match_date", "winner"] + composicion(heroes)
+
+
+assert columnas() == COLUMNS and feature_columns() == FEATURE_COLUMNS and obligatorias() == OBLIGATORIAS

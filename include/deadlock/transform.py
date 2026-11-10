@@ -1,5 +1,5 @@
 """
-De JSON crudo de la Deadlock API a las 73 columnas de schema.COLUMNS.
+De JSON crudo de la Deadlock API a las columnas de schema.columnas(heroes).
 
 Dos pasos separados a proposito (ver docs/decisiones-diseno-dataset.md y el
 plan de la Entrega 1):
@@ -9,8 +9,12 @@ plan de la Entrega 1):
                                las tablas de estadisticas. Lo usa
                                build_matches_table (tarea del DAG).
   2. build_match_row(...)  -- cruza esa base contra las tablas de stats
-                               (ya con shrinkage aplicado) y arma las 66
+                               (ya con shrinkage aplicado) y arma las
                                columnas de features. Lo usa build_features.
+
+Las dos funciones reciben el catalogo de heroes del corte (deadlock.catalogo).
+Sin catalogo usan el de la Entrega 3 (schema.HEROES, 38 heroes y 73 columnas),
+y dan exactamente lo mismo que antes.
 
 Separarlos permite recalcular las features (por ejemplo, si cambia
 k_shrinkage) sin volver a parsear las paginas de bronce de partidas.
@@ -34,16 +38,45 @@ def _parse_start_time(valor) -> str:
     return datetime.strptime(valor, "%Y-%m-%d %H:%M:%S").date().isoformat()
 
 
-def parse_match(raw_match: dict) -> dict | None:
+MOTIVOS_DESCARTE = ("equipo_incompleto", "heroe_fuera_de_catalogo", "heroe_repetido", "sin_ganador")
+
+
+def motivo_descarte(raw_match: dict, hero_ids: set[int] | None = None) -> str | None:
+    """Por que una partida no pasa el filtro de calidad, o None si pasa.
+
+    Se revisa en este orden y se devuelve el primer motivo:
+      - equipo_incompleto: algun equipo no tiene exactamente 6 jugadores
+        con heroe (abandono u otro dato parcial)
+      - heroe_fuera_de_catalogo: un hero_id que no esta en el catalogo del
+        corte. Con el catalogo dinamico no deberia pasar nunca: el catalogo
+        incluye a todos los heroes que aparecen en las partidas.
+      - heroe_repetido: el mismo heroe en los dos equipos
+      - sin_ganador: la partida no tiene un equipo ganador definido
+    """
+    hero_ids = schema.HERO_IDS if hero_ids is None else hero_ids
+    equipos = {"Team0": [], "Team1": []}
+    for jugador in raw_match.get("players") or []:
+        if jugador.get("team") in equipos and jugador.get("hero_id") is not None:
+            equipos[jugador["team"]].append(jugador["hero_id"])
+    todos = equipos["Team0"] + equipos["Team1"]
+    if len(equipos["Team0"]) != 6 or len(equipos["Team1"]) != 6:
+        return "equipo_incompleto"
+    if any(h not in hero_ids for h in todos):
+        return "heroe_fuera_de_catalogo"
+    if len(set(todos)) != 12:
+        return "heroe_repetido"
+    if raw_match.get("winning_team") not in ("Team0", "Team1"):
+        return "sin_ganador"
+    return None
+
+
+def parse_match(raw_match: dict, hero_ids: set[int] | None = None) -> dict | None:
     """Devuelve la fila base de una partida, o None si no pasa el filtro de calidad.
 
-    Motivos de descarte (se cuentan en build_matches_table para el log de
-    "partidas leidas vs. partidas finales" que pide la defensa de la
-    Entrega 1):
-      - algun equipo no tiene exactamente 6 heroes validos (abandono u
-        otro dato parcial)
-      - hay un hero_id fuera del catalogo de 38 heroes activos
-      - la partida no tiene un equipo ganador definido
+    Los motivos de descarte estan en motivo_descarte(); build_matches_table
+    los cuenta uno por uno para el log de "partidas leidas vs. partidas
+    finales" que pide la defensa de la Entrega 1. `hero_ids` es el catalogo
+    del corte; sin el, se usa el de la Entrega 3.
 
     Nota sobre badges (verificado leyendo el bronce crudo, en ranked y en
     unranked): `average_badge_team0`/`average_badge_team1` los devuelve la
@@ -62,25 +95,20 @@ def parse_match(raw_match: dict) -> dict | None:
     de entrada visible). Se documenta como concesion explicita, no como el
     mismo numero partido en dos.
     """
+    if motivo_descarte(raw_match, hero_ids) is not None:
+        return None
+
     equipos = {"Team0": [], "Team1": []}
     ranks_iniciales = {"Team0": [], "Team1": []}
     for jugador in raw_match.get("players") or []:
         team = jugador.get("team")
-        hero_id = jugador.get("hero_id")
-        if team in equipos and hero_id in schema.HERO_IDS:
-            equipos[team].append(hero_id)
+        if team in equipos and jugador.get("hero_id") is not None:
+            equipos[team].append(jugador["hero_id"])
         rango = jugador.get("player_rank_initial_display_rank")
         if team in ranks_iniciales and rango is not None:
             ranks_iniciales[team].append(rango)
 
-    if len(equipos["Team0"]) != 6 or len(equipos["Team1"]) != 6:
-        return None
-    if len(set(equipos["Team0"] + equipos["Team1"])) != 12:
-        return None
-
-    winning_team = raw_match.get("winning_team")
-    if winning_team not in ("Team0", "Team1"):
-        return None
+    winning_team = raw_match["winning_team"]
 
     badge_a = statistics.mean(ranks_iniciales["Team0"]) if ranks_iniciales["Team0"] else None
     badge_b = statistics.mean(ranks_iniciales["Team1"]) if ranks_iniciales["Team1"] else None
@@ -163,19 +191,23 @@ def _synergy_adv(tablas: dict, hero_x: int, hero_y: int) -> float:
 # --- paso 2b: fila base + tablas -> las 66 columnas de features -------------
 
 
-def build_match_row(base: dict, tablas: dict) -> dict:
-    """A partir de una fila de build_matches_table, arma las 66 features.
+def build_match_row(base: dict, tablas: dict, heroes: list[tuple[int, str]] | None = None) -> dict:
+    """A partir de una fila de build_matches_table, arma las features.
 
     No toca la red ni vuelve a mirar el JSON crudo de la partida: todo lo
     que necesita ya esta en `base` (heroes_a/heroes_b) y en `tablas`
     (build_stat_tables). Por eso esta funcion se puede re-ejecutar barato
     si cambia k_shrinkage, sin reprocesar el bronce.
+
+    `heroes` es el catalogo del corte, [(id, slug)]: una columna de
+    composicion por heroe. Sin el, se usa el de la Entrega 3. Un heroe sin
+    estadisticas en la ventana (recien lanzado) aporta ventaja 0: neutro.
     """
     heroes_a, heroes_b = base["heroes_a"], base["heroes_b"]
     fila = {k: v for k, v in base.items() if k not in ("heroes_a", "heroes_b")}
 
     # --- composicion: +1 en A, -1 en B, 0 si no participa ---
-    for hero_id, slug in schema.HEROES:
+    for hero_id, slug in (schema.HEROES if heroes is None else heroes):
         if hero_id in heroes_a:
             fila[f"hero_{slug}"] = 1
         elif hero_id in heroes_b:
