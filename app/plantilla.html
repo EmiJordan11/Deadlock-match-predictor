@@ -1,0 +1,546 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>¿Quién gana el draft? · Deadlock</title>
+<meta name="description" content="¿Se puede saber quién gana una partida de Deadlock sabiendo solo los héroes de cada equipo? Proyecto Integrador · Ciencia de Datos · UTN FRM 2026.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Marcellus+SC&family=Barlow+Condensed:wght@400;500;600;700&family=Barlow:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+:root {
+  /* riel de latón a la izquierda (la historia · tu turno) y una columna de lectura; la copa se abre a todo el ancho para el draft */
+  --ink: #0f0d0b;
+  --panel: #17130f;
+  --panel-2: #201a14;
+  --line: #3a3026;
+  --line-2: #5a4a36;
+  --brass: #c9a46a;
+  --brass-hi: #ead09a;
+  --text: #ece2cc;
+  --muted: #a3977f;
+  --faint: #6f6553;
+  --amber: #e8922e;
+  --amber-dim: rgba(232, 146, 46, .16);
+  --sapphire: #4f93e3;
+  --sapphire-dim: rgba(79, 147, 227, .16);
+  --glow-a: rgba(232, 146, 46, .07);
+  --glow-b: rgba(79, 147, 227, .06);
+  --f-display: "Marcellus SC", "Cormorant SC", Georgia, serif;
+  --f-ui: "Barlow Condensed", "Arial Narrow", "Roboto Condensed", sans-serif;
+  --f-body: "Barlow", "Segoe UI", system-ui, sans-serif;
+  color-scheme: dark;
+}
+*, *::before, *::after { box-sizing: border-box; }
+html { background: var(--ink); scroll-behavior: smooth; }
+body {
+  margin: 0;
+  background: var(--ink);
+  background-image: radial-gradient(1100px 700px at -10% -10%, var(--glow-a), transparent 60%),
+                    radial-gradient(1100px 700px at 110% 110%, var(--glow-b), transparent 60%);
+  background-attachment: fixed;
+  color: var(--text);
+  font-family: var(--f-body);
+  font-size: 16px;
+  line-height: 1.55;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+img { max-width: 100%; }
+[hidden] { display: none !important; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } *, *::before, *::after { animation: none !important; transition: none !important; } }
+
+a { color: var(--brass-hi); }
+:focus-visible { outline: 2px solid var(--brass-hi); outline-offset: 2px; }
+
+.app { display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 56px; max-width: 1240px; margin: 0 auto; }
+
+/* ---- riel ---- */
+.riel { position: sticky; top: 0; align-self: start; padding-block: 40px; display: grid; gap: 28px; }
+.marca { margin: 0; font-family: var(--f-ui); font-size: 13px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); line-height: 1.5; }
+.marca b { display: block; font-family: var(--f-display); font-weight: 400; font-size: 22px; letter-spacing: .04em; text-transform: none; color: var(--brass-hi); margin-bottom: 4px; }
+.riel h3 { font-family: var(--f-ui); font-weight: 600; font-size: 12px; letter-spacing: .22em; text-transform: uppercase; color: var(--brass); margin: 0 0 10px; display: flex; align-items: center; gap: 8px; }
+.riel h3::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+.riel ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; counter-reset: paso; }
+.riel li a { display: flex; gap: 10px; align-items: baseline; padding: 6px 8px; border-left: 2px solid transparent; color: var(--muted); text-decoration: none; font-family: var(--f-ui); font-size: 17px; letter-spacing: .02em; }
+.riel .tallo li a::before { counter-increment: paso; content: counter(paso); font-size: 12px; color: var(--faint); width: 10px; }
+.riel li a:hover { color: var(--text); }
+.riel li a.activo { color: var(--text); border-left-color: var(--brass); background: linear-gradient(90deg, rgba(201, 164, 106, .12), transparent); }
+.riel .nota-copa { font-size: 13px; color: var(--faint); margin: 8px 0 0; }
+
+/* ---- secciones ---- */
+main { min-width: 0; padding-bottom: 48px; }
+.seccion { padding-block: 64px; border-top: 1px solid var(--line); position: relative; }
+.seccion::before { content: "◆"; position: absolute; top: -9px; left: 0; font-size: 12px; color: var(--brass); background: var(--ink); padding-right: 10px; }
+.ceja { font-family: var(--f-ui); font-weight: 600; font-size: 13px; letter-spacing: .22em; text-transform: uppercase; color: var(--brass); margin: 0 0 14px; }
+.ceja i { font-style: normal; color: var(--faint); margin: 0 6px; }
+h1, h2 { font-family: var(--f-display); font-weight: 400; color: var(--text); text-wrap: balance; letter-spacing: .01em; }
+h1 { font-size: clamp(2rem, 4.2vw, 3.3rem); line-height: 1.12; margin: 0 0 18px; max-width: 22ch; }
+h2 { font-size: clamp(1.55rem, 2.6vw, 2.2rem); line-height: 1.2; margin: 0 0 14px; max-width: 30ch; }
+h3 { font-family: var(--f-ui); font-weight: 600; font-size: 14px; letter-spacing: .16em; text-transform: uppercase; color: var(--brass); margin: 0 0 12px; }
+.lead { color: var(--muted); font-size: 17px; max-width: 65ch; margin: 0 0 26px; }
+.mirar { color: var(--muted); max-width: 65ch; margin: 16px 0 0; font-size: 15px; }
+.mirar strong { color: var(--text); font-weight: 600; }
+
+/* marco art déco: borde fino y cuatro esquinas de latón */
+.marco { position: relative; background: var(--panel); border: 1px solid var(--line); }
+.marco::before { content: ""; position: absolute; inset: -1px; pointer-events: none;
+  background:
+    linear-gradient(var(--brass), var(--brass)) top left / 16px 2px no-repeat,
+    linear-gradient(var(--brass), var(--brass)) top left / 2px 16px no-repeat,
+    linear-gradient(var(--brass), var(--brass)) top right / 16px 2px no-repeat,
+    linear-gradient(var(--brass), var(--brass)) top right / 2px 16px no-repeat,
+    linear-gradient(var(--brass), var(--brass)) bottom left / 16px 2px no-repeat,
+    linear-gradient(var(--brass), var(--brass)) bottom left / 2px 16px no-repeat,
+    linear-gradient(var(--brass), var(--brass)) bottom right / 16px 2px no-repeat,
+    linear-gradient(var(--brass), var(--brass)) bottom right / 2px 16px no-repeat; }
+.grafico { padding: 22px 18px 14px; }
+.vis { width: 100%; min-width: 0; }
+.vis .vega-bindings { display: flex; flex-wrap: wrap; gap: 10px 22px; margin-top: 12px; font-family: var(--f-ui); font-size: 15px; color: var(--muted); }
+.vis .vega-bind { display: flex; align-items: center; gap: 8px; }
+.vis .vega-bind-name { letter-spacing: .1em; text-transform: uppercase; font-size: 12px; color: var(--brass); }
+.vis select { background: var(--panel-2); color: var(--text); border: 1px solid var(--line-2); padding: 6px 10px; font-family: var(--f-ui); font-size: 15px; }
+#vg-tooltip-element.vg-tooltip { background: var(--panel-2); color: var(--text); border: 1px solid var(--brass); font-family: var(--f-ui); font-size: 14px; box-shadow: 0 8px 24px rgba(0, 0, 0, .5); }
+#vg-tooltip-element.vg-tooltip td.key { color: var(--muted); }
+.sin-js { color: var(--amber); font-family: var(--f-ui); }
+
+/* ---- cómo lo sabemos ---- */
+details.como { margin-top: 22px; border: 1px solid var(--line); background: rgba(23, 19, 15, .6); }
+details.como summary { cursor: pointer; list-style: none; padding: 14px 18px; font-family: var(--f-ui); font-weight: 600; font-size: 15px; letter-spacing: .14em; text-transform: uppercase; color: var(--brass-hi); display: flex; align-items: center; gap: 12px; }
+details.como summary::-webkit-details-marker { display: none; }
+details.como summary::before { content: "+"; display: inline-grid; place-items: center; width: 22px; height: 22px; border: 1px solid var(--brass); color: var(--brass); font-size: 16px; line-height: 1; }
+details.como[open] summary::before { content: "−"; }
+details.como .cuerpo { padding: 4px 22px 22px; display: grid; gap: 18px; max-width: 78ch; }
+details.como h4 { font-family: var(--f-ui); font-weight: 600; font-size: 13px; letter-spacing: .16em; text-transform: uppercase; color: var(--brass); margin: 6px 0 4px; }
+details.como p { margin: 0; color: var(--muted); font-size: 15px; }
+details.como p + p { margin-top: 8px; }
+details.como p strong { color: var(--text); font-weight: 600; }
+code { font-family: ui-monospace, "Cascadia Code", Consolas, monospace; font-size: .88em; color: var(--brass-hi); background: rgba(201, 164, 106, .08); padding: 1px 5px; }
+.tabla { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 14px; font-variant-numeric: tabular-nums; }
+th { font-family: var(--f-ui); font-weight: 600; font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--brass); text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line-2); }
+td { padding: 8px 10px; border-bottom: 1px solid var(--line); color: var(--muted); vertical-align: top; }
+td.n { text-align: right; color: var(--text); font-family: var(--f-ui); font-size: 15px; white-space: nowrap; }
+tr.elegido td { color: var(--text); background: rgba(201, 164, 106, .08); }
+
+/* ---- portada ---- */
+.portada { padding-block: 56px 64px; }
+.portada .lead { font-size: 18px; }
+.enfrentamiento { padding: 26px 22px 20px; display: grid; gap: 18px; margin: 8px 0 34px; }
+.enfrentamiento .filas { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 16px; align-items: center; }
+.equipo { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; }
+.equipo figure { margin: 0; aspect-ratio: 280 / 380; position: relative; overflow: hidden; background: linear-gradient(180deg, var(--panel-2), #0b0908); border-bottom: 3px solid var(--c); }
+.equipo figure img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.equipo figcaption { position: absolute; inset: auto 0 0; padding: 14px 4px 4px; font-family: var(--f-ui); font-size: 12px; text-align: center; color: var(--text); background: linear-gradient(transparent, rgba(0, 0, 0, .85)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.equipo.a { --c: var(--amber); }
+.equipo.b { --c: var(--sapphire); }
+.vs { font-family: var(--f-display); font-size: 26px; color: var(--brass); }
+.rotulos { display: flex; justify-content: space-between; font-family: var(--f-ui); font-size: 13px; letter-spacing: .18em; text-transform: uppercase; }
+.rotulos .a { color: var(--amber); } .rotulos .b { color: var(--sapphire); }
+.balanza { display: flex; height: 34px; border: 1px solid var(--line-2); font-family: var(--f-ui); font-weight: 600; font-size: 16px; position: relative; }
+.balanza span { display: flex; align-items: center; padding: 0 12px; white-space: nowrap; transition: width .45s ease; min-width: 0; overflow: hidden; }
+.balanza .a { background: linear-gradient(90deg, rgba(232, 146, 46, .55), rgba(232, 146, 46, .25)); color: var(--text); }
+.balanza .b { background: linear-gradient(270deg, rgba(79, 147, 227, .55), rgba(79, 147, 227, .25)); color: var(--text); justify-content: flex-end; flex: 1; }
+.balanza::after { content: ""; position: absolute; left: 50%; top: -6px; bottom: -6px; width: 2px; background: var(--brass); }
+.enfrentamiento .pie { margin: 0; color: var(--muted); font-size: 15px; }
+.oracion { font-family: var(--f-display); font-size: clamp(1.25rem, 2vw, 1.6rem); line-height: 1.35; color: var(--brass-hi); max-width: 40ch; margin: 0 0 28px; text-wrap: balance; }
+.numeros { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.num { padding: 20px 20px 18px; }
+.num b { display: block; font-family: var(--f-display); font-weight: 400; font-size: clamp(2.2rem, 4vw, 3rem); line-height: 1; color: var(--text); margin-bottom: 10px; font-variant-numeric: tabular-nums; }
+.num p { margin: 0; color: var(--muted); font-size: 14px; }
+.nota { color: var(--faint); font-size: 14px; max-width: 70ch; margin: 18px 0 0; }
+
+/* ---- copa ---- */
+.copa-banda { padding-block: 72px 8px; border-top: 1px solid var(--line-2); }
+.copa-banda p.ceja { color: var(--brass-hi); }
+.copa-banda h2 { max-width: 34ch; }
+.explora { display: grid; grid-template-columns: minmax(0, 1fr) 260px; gap: 18px; align-items: start; }
+.ficha { padding: 18px; display: grid; gap: 12px; }
+.ficha .retrato { aspect-ratio: 280 / 380; background: radial-gradient(circle at 50% 30%, var(--panel-2), #0b0908); border-bottom: 3px solid var(--brass); overflow: hidden; }
+.ficha .retrato img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.ficha h4 { font-family: var(--f-display); font-weight: 400; font-size: 26px; margin: 0; color: var(--text); }
+.ficha dl { margin: 0; display: grid; gap: 8px; }
+.ficha dt { font-family: var(--f-ui); font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--brass); }
+.ficha dd { margin: 0; color: var(--muted); font-size: 14px; }
+.ficha dd b { color: var(--text); font-family: var(--f-ui); font-size: 18px; font-weight: 600; }
+
+/* ---- draft ---- */
+.draft { padding: 22px; display: grid; gap: 18px; }
+.draft-cabeza { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 24px; }
+.turno { font-family: var(--f-ui); font-size: 20px; letter-spacing: .04em; color: var(--muted); }
+.turno b { font-weight: 700; }
+.turno b.a { color: var(--amber); } .turno b.b { color: var(--sapphire); }
+.orden { list-style: none; margin: 0; padding: 0; display: flex; gap: 4px; flex-wrap: wrap; }
+.orden li { width: 26px; height: 30px; display: grid; place-items: center; font-family: var(--f-ui); font-size: 13px; font-weight: 600; border: 1px solid var(--line-2); color: var(--faint); }
+.orden li.a { --c: var(--amber); } .orden li.b { --c: var(--sapphire); }
+.orden li.hecho { background: var(--c); color: var(--ink); border-color: var(--c); opacity: .75; }
+.orden li.ahora { border-color: var(--c); color: var(--c); box-shadow: 0 0 0 1px var(--c), 0 0 14px var(--c); }
+.balanza.grande { height: 42px; font-size: 18px; }
+.mesa { display: grid; grid-template-columns: 158px minmax(0, 1fr) 158px; gap: 18px; align-items: start; }
+.slots { display: grid; gap: 6px; }
+.slots .titulo { font-family: var(--f-ui); font-weight: 600; font-size: 13px; letter-spacing: .2em; text-transform: uppercase; color: var(--c); margin-bottom: 2px; }
+.slots.a { --c: var(--amber); --cd: var(--amber-dim); } .slots.b { --c: var(--sapphire); --cd: var(--sapphire-dim); }
+.slot { display: grid; grid-template-columns: 40px minmax(0, 1fr); gap: 8px; align-items: center; min-height: 48px; padding: 4px 8px 4px 4px; border: 1px solid var(--line); background: var(--panel-2); }
+.slot .cara { width: 40px; height: 40px; background: #0b0908; display: grid; place-items: center; font-family: var(--f-ui); font-size: 13px; color: var(--faint); overflow: hidden; }
+.slot .cara img { width: 100%; height: 100%; object-fit: cover; }
+.slot .quien { min-width: 0; font-family: var(--f-ui); font-size: 15px; line-height: 1.15; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.slot .quien small { display: block; font-size: 12px; color: var(--muted); }
+.slot.lleno { background: linear-gradient(90deg, var(--cd), var(--panel-2)); border-color: var(--c); }
+.slot.activo { border-color: var(--c); animation: latido 1.4s ease-in-out infinite; }
+@keyframes latido { 50% { box-shadow: 0 0 0 1px var(--c), 0 0 16px var(--cd); } }
+.grilla { display: grid; grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); gap: 6px; }
+.heroe { position: relative; aspect-ratio: 280 / 380; padding: 0; border: 1px solid var(--line); background: linear-gradient(180deg, #231c16, #0b0908); cursor: pointer; overflow: hidden; color: var(--text); font: inherit; transition: transform .15s ease, border-color .15s ease; }
+.heroe img { width: 100%; height: 100%; object-fit: cover; display: block; transition: filter .2s ease; }
+.heroe .nombre { position: absolute; inset: auto 0 0; padding: 16px 3px 3px; font-family: var(--f-ui); font-size: 12px; line-height: 1.1; text-align: center; background: linear-gradient(transparent, rgba(0, 0, 0, .9)); }
+.heroe .pts { position: absolute; top: 3px; right: 3px; font-family: var(--f-ui); font-size: 11px; font-weight: 600; padding: 0 4px; background: rgba(15, 13, 11, .85); color: var(--muted); }
+.heroe:hover:not(:disabled) { transform: translateY(-2px); border-color: var(--brass); }
+.heroe:hover:not(:disabled) .pts { color: var(--text); }
+.heroe.reco { border-color: var(--brass); box-shadow: 0 0 0 1px var(--brass), 0 0 18px rgba(201, 164, 106, .35); }
+.heroe .cinta { position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; display: grid; place-items: center; font-family: var(--f-ui); font-weight: 700; font-size: 13px; background: var(--brass); color: var(--ink); transform: rotate(45deg); }
+.heroe .cinta span { transform: rotate(-45deg); }
+.heroe:disabled { cursor: default; }
+.heroe.tomado img { filter: grayscale(1) brightness(.35); }
+.heroe.tomado::after { content: attr(data-equipo); position: absolute; inset: 0; display: grid; place-items: center; font-family: var(--f-display); font-size: 28px; color: var(--c); }
+.heroe.tomado.a { --c: var(--amber); } .heroe.tomado.b { --c: var(--sapphire); }
+.draft-pie { display: grid; grid-template-columns: minmax(0, 340px) minmax(0, 1fr); gap: 18px; }
+.recos { border: 1px solid var(--line); background: var(--panel-2); padding: 16px; display: grid; gap: 10px; align-content: start; }
+.recos-lista { display: grid; gap: 8px; }
+.reco-item { display: grid; grid-template-columns: 28px 44px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 6px; border: 1px solid var(--line); background: var(--panel); cursor: pointer; color: var(--text); font: inherit; text-align: left; }
+.reco-item:hover { border-color: var(--brass); }
+.reco-item .rk { font-family: var(--f-display); font-size: 20px; color: var(--brass); text-align: center; }
+.reco-item img { width: 44px; height: 44px; object-fit: cover; background: #0b0908; }
+.reco-item .nm { font-family: var(--f-ui); font-size: 17px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.reco-item .dl { font-family: var(--f-ui); font-weight: 600; font-size: 17px; color: var(--c); }
+.recos .aviso { font-size: 13px; color: var(--faint); margin: 2px 0 0; }
+.curva-box { border: 1px solid var(--line); background: var(--panel-2); padding: 16px 14px 8px; min-width: 0; }
+.acciones { display: flex; flex-wrap: wrap; gap: 10px; }
+button.boton { font-family: var(--f-ui); font-weight: 600; font-size: 14px; letter-spacing: .12em; text-transform: uppercase; padding: 10px 16px; border: 1px solid var(--line-2); background: transparent; color: var(--text); cursor: pointer; }
+button.boton:hover { border-color: var(--brass); color: var(--brass-hi); }
+button.boton.principal { background: var(--brass); border-color: var(--brass); color: var(--ink); }
+button.boton.principal:hover { background: var(--brass-hi); color: var(--ink); }
+button.boton:disabled { opacity: .4; cursor: default; }
+.resultado { margin: 0; font-family: var(--f-ui); font-size: 18px; color: var(--muted); min-height: 1.5em; }
+.resultado b { color: var(--text); }
+footer { border-top: 1px solid var(--line); padding-block: 26px 40px; color: var(--faint); font-size: 13px; }
+footer p { margin: 0 0 6px; }
+
+/* ---- angosto ---- */
+@media (max-width: 1080px) {
+  .mesa { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-areas: "a b" "g g"; }
+  .slots.a { grid-area: a; } .slots.b { grid-area: b; } .grilla { grid-area: g; }
+  .explora { grid-template-columns: minmax(0, 1fr); }
+  .ficha { grid-template-columns: 120px minmax(0, 1fr); align-items: start; }
+  .ficha .retrato { grid-row: span 3; }
+}
+@media (max-width: 960px) {
+  .app { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  .riel { position: sticky; top: 0; z-index: 5; padding-block: 10px; background: var(--ink); border-bottom: 1px solid var(--line); display: flex; gap: 14px; overflow-x: auto; align-items: center; }
+  .riel .marca, .riel h3, .riel .nota-copa { display: none; }
+  .riel ol { display: flex; gap: 4px; }
+  .riel li a { white-space: nowrap; font-size: 15px; padding: 4px 8px; border-left: 0; border-bottom: 2px solid transparent; }
+  .riel li a.activo { border-bottom-color: var(--brass); background: none; }
+  .draft-pie { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 640px) {
+  .numeros { grid-template-columns: minmax(0, 1fr); }
+  .enfrentamiento .filas { grid-template-columns: minmax(0, 1fr); }
+  .vs { text-align: center; font-size: 20px; }
+  .orden { gap: 3px; }
+  .orden li { width: 22px; height: 26px; font-size: 12px; }
+  .grilla { grid-template-columns: repeat(auto-fill, minmax(62px, 1fr)); }
+  .slot { grid-template-columns: 34px minmax(0, 1fr); min-height: 42px; }
+  .slot .cara { width: 34px; height: 34px; }
+  .draft { padding: 14px; }
+  .ficha { grid-template-columns: 96px minmax(0, 1fr); }
+}
+</style>
+<script src="vendor/vega.min.js"></script>
+<script src="vendor/vega-lite.min.js"></script>
+<script src="vendor/vega-embed.min.js"></script>
+</head>
+<body>
+<div class="app">
+<nav class="riel" aria-label="Secciones">
+  <p class="marca"><b>¿Quién gana el draft?</b>Ciencia de Datos · UTN FRM<br>Proyecto Integrador 2026</p>
+  <div class="tallo"><h3>La historia</h3><ol>
+    <li><a href="#portada" class="activo">El proyecto</a></li>
+    <li><a href="#datos">Los datos</a></li>
+    <li><a href="#hallazgo">Lo que encontramos</a></li>
+    <li><a href="#modelo">El modelo</a></li></ol></div>
+  <div><h3>Tu turno</h3><ol>
+    <li><a href="#explora">Explorá los héroes</a></li>
+    <li><a href="#draft">Armá el draft</a></li></ol>
+    <p class="nota-copa">La historia se lee en orden. Acá las preguntas las hacés vos.</p></div>
+</nav>
+
+<main>
+<section id="portada" class="portada">
+  <p class="ceja">Proyecto Integrador <i>◆</i> Deadlock</p>
+  <h1>¿Se puede saber quién gana una partida sabiendo solo qué héroes eligió cada equipo?</h1>
+  <p class="lead">En Deadlock juegan seis contra seis, y cada equipo arma su composición antes de empezar. Si algunos héroes rinden más que otros, la composición tendría que delatar al ganador. Lo medimos sobre {{partidas}} partidas ranked.</p>
+
+  <div class="enfrentamiento marco" aria-label="Una partida real del test">
+    <div class="rotulos"><span class="a">Equipo A</span><span class="b">Equipo B</span></div>
+    <div class="filas">
+      <div class="equipo a" id="portada-a"></div>
+      <div class="vs">vs</div>
+      <div class="equipo b" id="portada-b"></div>
+    </div>
+    <div class="balanza" id="portada-balanza"></div>
+    <p class="pie" id="portada-pie"><noscript><span class="sin-js">La aplicación necesita JavaScript para mostrar los gráficos y el draft.</span></noscript></p>
+  </div>
+
+  <p class="oracion">Sabiendo solo los 12 héroes, el modelo acierta {{acc_frase}} partidas: la composición inclina la balanza, pero no decide el resultado.</p>
+  <div class="numeros">
+    <div class="num marco"><b>{{acc}}</b><p>de las {{test_n}} partidas del test, con el ganador bien adivinado, contra {{piso}} del piso</p></div>
+    <div class="num marco"><b>{{top}}</b><p>de aciertos en el 20 % de partidas con la composición más despareja</p></div>
+    <div class="num marco"><b>{{r}}</b><p>de correlación entre lo que el modelo aprendió de cada héroe y el winrate que publica la API, sin haberlo visto</p></div>
+  </div>
+  <p class="nota">Medido sobre las partidas del {{fecha_test}}, que el modelo no vio: entrenó con las del {{fecha_train}}. El piso es un modelo que dice siempre «gana {{piso_clase}}».</p>
+</section>
+
+<section id="datos" class="seccion">
+  <p class="ceja">Los datos <i>◆</i> Entrega 1</p>
+  <h2>En las {{n_cortes_txt}} fechas, el Equipo A gana la mitad de las partidas: ser A o B no da ventaja</h2>
+  <p class="lead">Cada fila es una partida ranked de seis contra seis, bajada de la API pública de Deadlock por un pipeline de Airflow. Juntamos {{por_corte}} partidas en cada una de {{n_cortes_txt}} fechas, entre el {{fecha_ini}} y el {{fecha_fin}}.</p>
+  <div class="marco grafico"><div id="g-datos" class="vis" role="img" aria-label="Porcentaje de partidas que ganó el Equipo A en cada fecha"></div></div>
+  <p class="mirar"><strong>Qué mirar.</strong> Los {{n_cortes_txt}} rombos quedan entre {{cmin}} y {{cmax}}, pegados a la línea del 50 %. Lo que el modelo aprenda no puede venir de la etiqueta A o B: tiene que venir de los héroes.</p>
+  <details class="como"><summary>Cómo lo sabemos</summary><div class="cuerpo">
+    <div><h4>De dónde salen</h4><p>Del DAG <code>deadlock_ingest</code> (Airflow 3), que le pide a <code>api.deadlock-api.com</code> las partidas ranked y las estadísticas de héroes, de cruces y de parejas. Fechas de corte: {{fechas_lista}}.</p></div>
+    <div><h4>Qué es una fila</h4><p>Una partida. El Equipo A es el <code>Team0</code> de la API, asignado sin relación con la habilidad. {{n_columnas}} columnas: <strong>{{n_comp}} de composición</strong> (+1 si el héroe juega en A, −1 si juega en B, 0 si no está), {{n_ventajas}} ventajas calculadas con las estadísticas, metadatos y el ganador.</p></div>
+    <div><h4>Las dos ventanas</h4><p>Las estadísticas salen de los 14 días <strong>anteriores</strong> a cada corte, y las partidas, del día del corte. Ninguna de las {{partidas}} partidas es anterior a su corte, así que ninguna fila está dentro de las estadísticas con las que se calcularon sus columnas.</p></div>
+    <div><h4>Qué se filtró y qué quedó</h4>{{tabla_filtros}}
+      <p style="margin-top:10px">El modo de juego y el ranked se filtran en el pedido mismo a la API, así que el filtro de calidad del DAG no tuvo nada que descartar. Que dé cero también es un dato: las partidas ranked que devuelve la API vienen completas.</p></div>
+    <div><h4>Columnas que no entran</h4><p><code>match_id</code> y <code>match_date</code> son identificadores; <code>game_mode</code> y <code>match_mode</code>, constantes. <code>average_badge_diff</code> sale porque no separa a ganadores de perdedores (H4), no por fuga. Las {{n_ventajas}} ventajas se midieron en la Entrega 3 y no entran al modelo final: dependen de las estadísticas de la API.</p></div>
+  </div></details>
+</section>
+
+<section id="hallazgo" class="seccion">
+  <p class="ceja">Lo que encontramos <i>◆</i> Entrega 2</p>
+  <h2>Con los héroes más fuertes, A gana {{dec10_frase}} partidas; con los más débiles, {{dec1_frase}}</h2>
+  <p class="lead">Ordenamos las partidas por cuánto más fuertes eran los héroes de A que los de B, según el winrate que publica la API, y las partimos en diez grupos iguales.</p>
+  <div class="marco grafico"><div id="g-hallazgo" class="vis" role="img" aria-label="Porcentaje de victorias de A por decil de ventaja de los héroes"></div></div>
+  <p class="mirar"><strong>Qué mirar.</strong> Los extremos: cuando A tenía los héroes más débiles ganó el {{dec1}} de las veces, y cuando tenía los más fuertes, el {{dec10}}. Y el medio: en los deciles 4 a 7, cuatro de cada diez partidas, A gana entre {{mmin}} y {{mmax}}. La composición decide cuando está muy despareja, y casi nunca lo está.</p>
+  <details class="como"><summary>Cómo lo sabemos</summary><div class="cuerpo">
+    <div><h4>Cómo se construyó el gráfico</h4><p>Las {{partidas}} partidas, ordenadas por <code>hero_winrate_adv_mean</code> (winrate promedio de los héroes de A menos el de los de B, según la API) y partidas en deciles de {{por_decil}}. Cada rombo es el porcentaje en que ganó A, con su intervalo de 95 %. El color va del zafiro (gana más B) al ámbar (gana más A), los mismos colores de los equipos en toda la app.</p></div>
+    <div><h4>Una hipótesis que se sostuvo · H3</h4><p>Las tres medias de winrate (individual, de cruces y de parejas) miden lo mismo: correlación de <strong>{{h3_counter}}</strong> entre la de cruces y la individual, y de <strong>{{h3_synergy}}</strong> con la de parejas. Dos de las tres sobran.</p></div>
+    <div><h4>Una que no · H4</h4><p>El equipo con mejor rango gana más seguido: separación de <strong>{{h4}}</strong>, zona roja. El matchmaking ya empareja los rangos, así que la diferencia de rango no dice quién gana.</p></div>
+    <div><h4>La del gráfico · H1</h4><p>La ventaja de composición separa a ganadores de perdedores con una separación de <strong>{{h1}}</strong>, zona amarilla: hay señal, pero las dos distribuciones se pisan casi enteras.</p>
+      <p>Los números de las hipótesis son los del notebook de la Entrega 2, medidos sobre su propio corte ({{e2_corte}}); el gráfico usa las {{partidas}} partidas de esta aplicación.</p></div>
+  </div></details>
+</section>
+
+<section id="modelo" class="seccion">
+  <p class="ceja">El modelo <i>◆</i> Entrega 3</p>
+  <h2>Sabiendo solo los 12 héroes, el modelo acierta {{acc_frase}} partidas que no vio, y {{top_frase}} cuando la composición está despareja</h2>
+  <p class="lead">Una regresión logística con un peso por héroe: aprende de los resultados cuánto inclina la balanza cada uno, sin mirar ninguna estadística externa.</p>
+  <div class="marco grafico"><div id="g-modelo" class="vis" role="img" aria-label="Aciertos del modelo según qué tan despareja es la composición"></div></div>
+  <p class="mirar"><strong>Qué mirar.</strong> Cada palo sale del piso. En las partidas más parejas el modelo acierta {{low}}, una moneda; a medida que la composición se desequilibra, acierta más. El modelo sabe cuándo no sabe.</p>
+  <details class="como"><summary>Cómo lo sabemos</summary><div class="cuerpo">
+    <div><h4>La métrica</h4><p><strong>ROC AUC</strong>, con la accuracy al lado. La app muestra una probabilidad, y el AUC mide si el modelo ordena bien las partidas usando la probabilidad entera. A y B son etiquetas simétricas: errar para un lado cuesta lo mismo que para el otro.</p></div>
+    <div><h4>El piso y la validación</h4><p>El piso dice siempre «gana {{piso_clase}}»: AUC 0,500. La validación imita el uso: se entrena con una fecha y se valida con la siguiente ({{pasos}} pasos), y el test es la fecha del {{fecha_test}} entera, mirada una sola vez. Partir al azar cambiaría el número apenas {{azar}}.</p></div>
+    <div><h4>La comparación</h4>{{tabla_comparacion}}
+      <p style="margin-top:10px">La composición empata con la mejor (la diferencia es menor que el desvío) y es la única del empate que no necesita las estadísticas de la API. Ningún modelo más complejo le gana.</p></div>
+    <div><h4>El ajuste y el test</h4><p>Multa l2, <code>C = {{c_elegido}}</code>, sin escalar: con <code>C</code> entre 0,01 y 10 el AUC va de {{c_min}} a {{c_max}}. En el test, AUC <strong>{{auc}}</strong> y accuracy <strong>{{acc}}</strong>. El modelo de la Entrega 3, con los winrates de la API, da {{auc_e3}} en el mismo corte.</p></div>
+    <div><h4>En qué se apoya</h4><p>En un peso por héroe. Los que más empujan son {{heroes_mas}}; los que más restan, {{heroes_menos}}. Los {{n_comp}} pesos correlacionan <strong>{{r}}</strong> con el winrate de la API: el modelo aprendió de las partidas lo mismo que las estadísticas.</p></div>
+    <div><h4>Qué cambió desde la Entrega 3</h4><p>Antes se elegía la logística con tres columnas de winrate de la API. Las dos empataban, y ahora se elige la de la composición porque predice con los 12 héroes y nada más.</p></div>
+  </div></details>
+</section>
+
+<section id="explora" class="copa-banda">
+  <p class="ceja">Tu turno <i>◆</i> Explorá</p>
+  <h2>Los {{n_comp}} héroes, según el modelo y según lo que pasó en las partidas</h2>
+  <p class="lead">Hacia la derecha, los héroes que el modelo ve más fuertes; hacia arriba, los que más ganaron. Filtrá por fecha y por nivel de juego, pasá el mouse por un héroe o tocalo para ver su ficha.</p>
+  <div class="explora">
+    <div class="marco grafico"><div id="g-explora" class="vis" role="img" aria-label="Los héroes según el modelo y según sus victorias"></div></div>
+    <aside class="ficha marco" id="ficha" aria-live="polite"></aside>
+  </div>
+</section>
+
+<section id="draft" class="seccion" style="border-top:0">
+  <p class="ceja">Tu turno <i>◆</i> Probá el modelo</p>
+  <h2>Armá el draft y mirá cómo se mueve la balanza</h2>
+  <p class="lead">Los equipos eligen por turnos: A · B B · A A · B B · A A · B B · A. En cada turno el modelo recomienda tres héroes y dice cuántos puntos le suma cada uno al equipo que elige. Arranca con los primeros picks de una partida real.</p>
+  <div class="draft marco">
+    <div class="draft-cabeza"><div class="turno" id="turno"></div><ol class="orden" id="orden" aria-label="Orden de los picks"></ol></div>
+    <div class="balanza grande" id="balanza"></div>
+    <div class="mesa">
+      <div class="slots a" id="slots-a"></div>
+      <div class="grilla" id="grilla" aria-label="Héroes disponibles"></div>
+      <div class="slots b" id="slots-b"></div>
+    </div>
+    <div class="draft-pie">
+      <div class="recos"><h3>El modelo recomienda</h3><div id="recos" class="recos-lista"></div>
+        <p class="aviso">La lista es la misma para los dos equipos: el modelo suma un peso por héroe y no mira contra quién juega.</p></div>
+      <div class="curva-box"><h3>La probabilidad, pick a pick</h3><div id="g-curva" class="vis" role="img" aria-label="Probabilidad de que gane A después de cada pick"></div></div>
+    </div>
+    <p class="resultado" id="resultado" aria-live="polite"></p>
+    <div class="acciones">
+      <button class="boton principal" id="b-completar" type="button">Completar con las recomendaciones</button>
+      <button class="boton" id="b-deshacer" type="button">Deshacer</button>
+      <button class="boton" id="b-cargar" type="button">Cargar una partida real</button>
+      <button class="boton" id="b-reiniciar" type="button">Empezar de cero</button>
+    </div>
+  </div>
+  <details class="como"><summary>Cómo calcula y qué no se puede cargar</summary><div class="cuerpo">
+    <div><h4>La cuenta</h4><p>P(gana A) = σ(b + suma de los pesos de los héroes de A − suma de los pesos de los de B), con <code>b = {{b0}}</code> y los {{n_comp}} pesos que el modelo aprendió de las {{por_corte}} partidas del {{fecha_train}}. Es la misma cuenta que el notebook: las partidas reales que se cargan acá dan la misma probabilidad que allá.</p></div>
+    <div><h4>Por qué la recomendación no mira al rival</h4><p>Cada héroe suma su peso sin importar contra quién juega, así que el orden de la recomendación es el mismo para los dos equipos. Lo probamos: agregarle al modelo un peso por cada cruce de héroes ({{n_cruces}} columnas) bajó el AUC de {{auc_cv_3}} a {{auc_cruces}}. Con {{por_corte}} partidas por fecha, los cruces no se pueden aprender.</p></div>
+    <div><h4>Qué no se puede cargar</h4><p>Solo los {{n_comp}} héroes que vio el modelo, cada uno una vez y seis por equipo. Los cinco héroes que Valve agregó después del 21/09 no aparecen: el modelo no tiene un peso para ellos.</p></div>
+  </div></details>
+</section>
+
+<footer>
+  <p>Ciencia de Datos · UTN FRM · 2026 · Proyecto Integrador. Datos: <code>deadlock-api.com</code>, partidas ranked del {{fecha_ini}} al {{fecha_fin_larga}}. Código, pipeline y notebooks: <a href="https://github.com/EmiJordan11/Deadlock-match-predictor">github.com/EmiJordan11/Deadlock-match-predictor</a>.</p>
+  <p>Imágenes de héroes: assets de Deadlock © Valve, vía deadlock-api.com. Proyecto académico, sin relación con Valve. Generada con <code>app/build_app.py</code> el {{generada}}.</p>
+</footer>
+</main>
+</div>
+
+<script>
+const DATOS = /*__DATOS__*/null;
+const SPECS = /*__SPECS__*/null;
+const HER = Object.fromEntries(DATOS.heroes.map(h => [h.slug, h]));
+const ORDEN = ["A", "B", "B", "A", "A", "B", "B", "A", "A", "B", "B", "A"];
+const sig = z => 1 / (1 + Math.exp(-z));
+const fmt = (x, d = 1) => x.toLocaleString("es-AR", {minimumFractionDigits: d, maximumFractionDigits: d});
+const pct = (x, d = 1) => fmt(100 * x, d) + " %";
+const signo = x => (x > 0 ? "+" : x < 0 ? "−" : "") + fmt(Math.abs(x));
+
+/* portada: la partida real */
+function balanzaHTML(pa) {
+  return `<span class="a" style="width:${(100 * pa).toFixed(1)}%">A · ${pct(pa)}</span><span class="b">${pct(1 - pa)} · B</span>`;
+}
+(function portada() {
+  const ej = DATOS.ejemplos[0];
+  const fig = s => `<figure><img src="${HER[s].card}" alt="${HER[s].nombre}"><figcaption>${HER[s].nombre}</figcaption></figure>`;
+  document.getElementById("portada-a").innerHTML = ej.a.map(fig).join("");
+  document.getElementById("portada-b").innerHTML = ej.b.map(fig).join("");
+  document.getElementById("portada-balanza").innerHTML = balanzaHTML(ej.p);
+  document.getElementById("portada-pie").innerHTML = `Una partida real del ${DATOS.fecha_test}, de las que el modelo no vio. Con estos héroes le dio <b>${pct(ej.p)}</b> al Equipo A, y ganó el <b>Equipo ${ej.gano}</b>: la composición inclina, no decide.`;
+})();
+
+/* gráficos */
+const OPC = {actions: false, renderer: "svg",
+  formatLocale: {decimal: ",", thousands: ".", grouping: [3], currency: ["", " €"], percent: " %"}};
+const vistas = {};
+const listos = Promise.all(Object.entries(SPECS).map(([id, s]) =>
+  vegaEmbed("#" + id, s, OPC).then(r => { vistas[id] = r.view; }).catch(e => console.error(id, e))));
+
+/* explorá: ficha del héroe */
+function ficha(slug) {
+  const h = HER[slug];
+  const libre = !picks.some(p => p.slug === slug) && picks.length < 12;
+  document.getElementById("ficha").innerHTML = `
+    <div class="retrato"><img src="${h.card}" alt="${h.nombre}"></div>
+    <h4>${h.nombre}</h4>
+    <dl>
+      <dt>Según el modelo</dt><dd><b>${signo(h.pts)} pts</b> para su equipo, frente a un héroe promedio</dd>
+      <dt>En los datos</dt><dd>Su equipo ganó el <b>${fmt(h.wr)} %</b> de ${h.partidas.toLocaleString("es-AR")} partidas</dd>
+      <dt>Winrate en la API</dt><dd><b>${fmt(h.api)} %</b> en los 14 días previos al ${DATOS.fecha_train}</dd>
+    </dl>
+    <button class="boton" type="button" id="b-ficha" ${libre ? "" : "disabled"}>${libre ? "Elegirlo en el draft" : "Ya está en el draft"}</button>`;
+  document.getElementById("b-ficha").addEventListener("click", () => { elegir(slug); document.getElementById("draft").scrollIntoView(); });
+}
+
+/* draft */
+let picks = [];
+let cargada = null;
+let siguienteEjemplo = 1;
+const probA = (lista = picks) => sig(lista.reduce((z, p) => z + (p.team === "A" ? 1 : -1) * HER[p.slug].w, DATOS.b0));
+const libres = () => DATOS.heroes.filter(h => !picks.some(p => p.slug === h.slug));
+function recomendaciones() {
+  if (picks.length >= 12) return [];
+  const team = ORDEN[picks.length], antes = probA();
+  return libres().map(h => {
+    const despues = probA([...picks, {slug: h.slug, team}]);
+    return {h, delta: 100 * (team === "A" ? despues - antes : antes - despues)};
+  }).sort((a, b) => b.delta - a.delta).slice(0, 3);
+}
+function elegir(slug) {
+  if (picks.length >= 12 || picks.some(p => p.slug === slug) || !HER[slug]) return;
+  picks.push({slug, team: ORDEN[picks.length]});
+  cargada = null;
+  render();
+}
+function cargarEjemplo(ej, hasta = 12) {
+  let ia = 0, ib = 0;
+  picks = ORDEN.map(t => ({slug: t === "A" ? ej.a[ia++] : ej.b[ib++], team: t})).slice(0, hasta);
+  cargada = hasta === 12 ? ej : null;
+  render();
+}
+function slotsHTML(team) {
+  const mios = picks.map((p, i) => ({...p, i})).filter(p => p.team === team);
+  const proximo = picks.length < 12 && ORDEN[picks.length] === team ? mios.length : -1;
+  let html = `<div class="titulo">Equipo ${team}</div>`;
+  for (let k = 0; k < 6; k++) {
+    const p = mios[k];
+    if (p) {
+      const h = HER[p.slug];
+      html += `<div class="slot lleno"><div class="cara"><img src="${h.sm}" alt=""></div><div class="quien">${h.nombre}<small>pick ${p.i + 1} · ${signo(h.pts)} pts</small></div></div>`;
+    } else {
+      html += `<div class="slot ${k === proximo ? "activo" : ""}"><div class="cara">${team}${k + 1}</div><div class="quien"><small>${k === proximo ? "elige ahora" : "—"}</small></div></div>`;
+    }
+  }
+  return html;
+}
+function render() {
+  const n = picks.length, team = ORDEN[n], pa = probA();
+  document.getElementById("turno").innerHTML = n < 12
+    ? `Pick ${n + 1} de 12 · elige el <b class="${team.toLowerCase()}">Equipo ${team}</b>`
+    : `Draft completo · <b>${pa >= 0.5 ? "favorito: Equipo A" : "favorito: Equipo B"}</b>`;
+  document.getElementById("orden").innerHTML = ORDEN.map((t, i) =>
+    `<li class="${t.toLowerCase()} ${i < n ? "hecho" : i === n ? "ahora" : ""}" title="Pick ${i + 1}: Equipo ${t}">${t}</li>`).join("");
+  document.getElementById("balanza").innerHTML = balanzaHTML(pa);
+  document.getElementById("slots-a").innerHTML = slotsHTML("A");
+  document.getElementById("slots-b").innerHTML = slotsHTML("B");
+  const recos = recomendaciones(), rango = Object.fromEntries(recos.map((r, i) => [r.h.slug, i + 1]));
+  document.getElementById("grilla").innerHTML = [...DATOS.heroes].sort((a, b) => a.nombre.localeCompare(b.nombre)).map(h => {
+    const p = picks.find(x => x.slug === h.slug);
+    const cls = p ? `tomado ${p.team.toLowerCase()}` : rango[h.slug] ? "reco" : "";
+    return `<button type="button" class="heroe ${cls}" data-slug="${h.slug}" ${p ? `data-equipo="${p.team}" disabled` : n >= 12 ? "disabled" : ""}
+      aria-label="${h.nombre}, ${signo(h.pts)} puntos">
+      <img src="${h.card}" alt="" loading="lazy"><span class="pts">${signo(h.pts)}</span>
+      ${rango[h.slug] ? `<span class="cinta"><span>${rango[h.slug]}</span></span>` : ""}<span class="nombre">${h.nombre}</span></button>`;
+  }).join("");
+  const color = team === "A" ? "var(--amber)" : "var(--sapphire)";
+  document.getElementById("recos").innerHTML = recos.length ? recos.map((r, i) =>
+    `<button type="button" class="reco-item" data-slug="${r.h.slug}" style="--c:${color}"><span class="rk">${i + 1}</span><img src="${r.h.sm}" alt="">
+      <span class="nm">${r.h.nombre}</span><span class="dl">${signo(r.delta)} pts</span></button>`).join("")
+    : `<p class="aviso">Ya están los doce. Deshacé un pick o cargá otra partida.</p>`;
+  const res = document.getElementById("resultado");
+  if (n === 12 && cargada) res.innerHTML = `El modelo le da <b>${pct(pa)}</b> al Equipo A (en el notebook: ${pct(cargada.p)}). En la partida real ganó el <b>Equipo ${cargada.gano}</b>.`;
+  else if (n === 12) res.innerHTML = `Con estos doce héroes, el modelo le da <b>${pct(pa)}</b> al Equipo A y <b>${pct(1 - pa)}</b> al B.`;
+  else res.innerHTML = n ? `El último pick, ${HER[picks[n - 1].slug].nombre}, movió la balanza ${signo(100 * (pa - probA(picks.slice(0, -1))))} puntos para A.`
+    : `Los dos equipos arrancan casi parejos: el modelo le da al A una ventaja mínima, la que tuvo en las partidas del ${DATOS.fecha_train}.`;
+  document.getElementById("b-deshacer").disabled = n === 0;
+  document.getElementById("b-completar").disabled = n === 12;
+  const curva = [{pick: 0, pa: 100 * sig(DATOS.b0), equipo: "—", heroe: "Sin picks"}].concat(
+    picks.map((p, i) => ({pick: i + 1, pa: 100 * probA(picks.slice(0, i + 1)), equipo: p.team, heroe: HER[p.slug].nombre})));
+  listos.then(() => { const v = vistas["g-curva"]; if (v) v.change("curva", vega.changeset().remove(() => true).insert(curva)).run(); });
+}
+document.getElementById("grilla").addEventListener("click", e => { const b = e.target.closest(".heroe"); if (b && !b.disabled) elegir(b.dataset.slug); });
+document.getElementById("recos").addEventListener("click", e => { const b = e.target.closest(".reco-item"); if (b) elegir(b.dataset.slug); });
+document.getElementById("b-deshacer").addEventListener("click", () => { picks.pop(); cargada = null; render(); });
+document.getElementById("b-reiniciar").addEventListener("click", () => { picks = []; cargada = null; render(); });
+document.getElementById("b-completar").addEventListener("click", () => { while (picks.length < 12) elegir(recomendaciones()[0].h.slug); });
+document.getElementById("b-cargar").addEventListener("click", () => {
+  cargarEjemplo(DATOS.ejemplos[siguienteEjemplo % DATOS.ejemplos.length]);
+  siguienteEjemplo++;
+});
+
+cargarEjemplo(DATOS.ejemplos[0], 5);
+ficha(DATOS.heroes.reduce((a, b) => (b.pts > a.pts ? b : a)).slug);
+listos.then(() => {
+  const v = vistas["g-explora"];
+  if (v) v.addEventListener("click", (e, item) => { if (item && item.datum && item.datum.slug) ficha(item.datum.slug); });
+});
+
+/* el riel marca la sección que se está leyendo */
+const enlaces = [...document.querySelectorAll(".riel a")];
+const obs = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting)
+  enlaces.forEach(a => a.classList.toggle("activo", a.getAttribute("href") === "#" + e.target.id)); }), {rootMargin: "-40% 0px -55% 0px"});
+document.querySelectorAll("main section[id]").forEach(s => obs.observe(s));
+</script>
+</body>
+</html>

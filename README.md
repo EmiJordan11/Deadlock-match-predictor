@@ -1,5 +1,61 @@
 # airflow-deadlock
 
+*¿Se puede saber quién gana una partida de Deadlock sabiendo solo qué héroes
+eligió cada equipo?* Proyecto Integrador · Ciencia de Datos · UTN FRM 2026.
+
+## La aplicación (Entrega 4)
+
+**URL pública:** <https://emijordan11.github.io/Deadlock-match-predictor/>
+
+Una página que cuenta el proyecto en tres pasos (los datos, lo que
+encontramos, el modelo) y después deja explorar los 38 héroes y armar un
+draft: los equipos eligen por turnos y el modelo recomienda héroes y muestra
+cómo se mueve la probabilidad de cada equipo pick a pick.
+
+### La cadena completa
+
+```
+DAG deadlock_ingest      → include/output/bronze/ y silver/   (Entrega 1)
+notebooks/entrega2_...   → hipótesis                          (Entrega 2)
+notebooks/entrega3_modelado_v3.ipynb → modelo_entrega3_composicion.joblib  (Entrega 3)
+app/build_app.py         → docs/index.html                    (Entrega 4)
+```
+
+### Regenerar la aplicación
+
+```bash
+pip install -r notebooks/requirements.txt
+python app/build_app.py
+```
+
+`build_app.py` lee los cortes de `include/output/silver/` y el bronce de
+partidas, entrena el modelo elegido en la Entrega 3 (logística sobre las 38
+columnas de composición, sin escalar, l2, `C = 0,1`, entrenada con el último
+corte de entrenamiento) con la semilla 42, vuelve a medir con el mismo
+walk-forward la tabla de comparación que muestra la app, y escribe
+`docs/index.html`. Al final imprime los números y verifica que las
+predicciones coincidan con el `.joblib` que guardó el notebook. Si los datos
+cambian, correrlo de nuevo actualiza la aplicación. Tarda unos cinco minutos.
+
+| Archivo | Qué es |
+|---|---|
+| `app/build_app.py` | El script que genera la aplicación. |
+| `app/plantilla.html` | El HTML, el CSS y el JavaScript de la página; los números entran por marcadores `{{...}}`. |
+| `docs/index.html` | La aplicación generada: los gráficos (especificaciones de Altair) y los datos viajan adentro. |
+| `docs/heroes/` | Los retratos de los 38 héroes, bajados de los assets de deadlock-api.com. |
+| `docs/vendor/` | Vega, Vega-Lite y vega-embed, para que la página no dependa de un CDN. |
+
+En el navegador no corre Python: el modelo es una logística, así que la
+página calcula la probabilidad con los 38 pesos y el intercepto que escribe
+`build_app.py`, y da lo mismo que el notebook.
+
+### Publicarla
+
+GitHub Pages sirve la carpeta `docs/` de la rama `main`: en el repositorio,
+*Settings → Pages → Build and deployment → Deploy from a branch*, rama `main`,
+carpeta `/docs`. Cada `git push` con un `docs/index.html` nuevo actualiza la URL.
+Para verla localmente alcanza con abrir `docs/index.html` en el navegador.
+
 ## Experimentos de la Entrega 3
 
 La comparación temporal completa se encuentra en
