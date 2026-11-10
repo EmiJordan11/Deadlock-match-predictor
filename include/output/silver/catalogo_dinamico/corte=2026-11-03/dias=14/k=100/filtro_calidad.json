@@ -1,0 +1,10 @@
+{
+  "leidas": 10000,
+  "descartadas": {
+    "equipo_incompleto": 3,
+    "heroe_fuera_de_catalogo": 0,
+    "heroe_repetido": 0,
+    "sin_ganador": 2
+  },
+  "en_la_tabla_base": 9995
+}

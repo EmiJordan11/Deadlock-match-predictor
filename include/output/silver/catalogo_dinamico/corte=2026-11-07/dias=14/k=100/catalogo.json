@@ -1,0 +1,546 @@
+{
+  "corte": "2026-11-07",
+  "heroes": [
+    [
+      1,
+      "infernus"
+    ],
+    [
+      2,
+      "seven"
+    ],
+    [
+      3,
+      "vindicta"
+    ],
+    [
+      4,
+      "lady_geist"
+    ],
+    [
+      6,
+      "abrams"
+    ],
+    [
+      7,
+      "wraith"
+    ],
+    [
+      8,
+      "mcginnis"
+    ],
+    [
+      10,
+      "paradox"
+    ],
+    [
+      11,
+      "dynamo"
+    ],
+    [
+      12,
+      "kelvin"
+    ],
+    [
+      13,
+      "haze"
+    ],
+    [
+      14,
+      "holliday"
+    ],
+    [
+      15,
+      "bebop"
+    ],
+    [
+      16,
+      "calico"
+    ],
+    [
+      17,
+      "grey_talon"
+    ],
+    [
+      18,
+      "mo_and_krill"
+    ],
+    [
+      19,
+      "shiv"
+    ],
+    [
+      20,
+      "ivy"
+    ],
+    [
+      25,
+      "warden"
+    ],
+    [
+      27,
+      "yamato"
+    ],
+    [
+      31,
+      "lash"
+    ],
+    [
+      35,
+      "viscous"
+    ],
+    [
+      50,
+      "pocket"
+    ],
+    [
+      52,
+      "mirage"
+    ],
+    [
+      58,
+      "vyper"
+    ],
+    [
+      60,
+      "sinclair"
+    ],
+    [
+      63,
+      "mina"
+    ],
+    [
+      64,
+      "drifter"
+    ],
+    [
+      65,
+      "venator"
+    ],
+    [
+      66,
+      "victor"
+    ],
+    [
+      67,
+      "paige"
+    ],
+    [
+      69,
+      "the_doorman"
+    ],
+    [
+      72,
+      "billy"
+    ],
+    [
+      76,
+      "graves"
+    ],
+    [
+      77,
+      "apollo"
+    ],
+    [
+      78,
+      "deadman_danny"
+    ],
+    [
+      79,
+      "rem"
+    ],
+    [
+      80,
+      "silver"
+    ],
+    [
+      81,
+      "celeste"
+    ],
+    [
+      84,
+      "rat_king"
+    ],
+    [
+      85,
+      "solomon"
+    ],
+    [
+      86,
+      "violet"
+    ],
+    [
+      87,
+      "nurse_harrow"
+    ],
+    [
+      88,
+      "baba"
+    ]
+  ],
+  "fuera_del_catalogo_entrega3": [
+    78,
+    84,
+    85,
+    86,
+    87,
+    88
+  ],
+  "nuevos_en_registro": [],
+  "sin_estadisticas": [],
+  "fuera_de_la_api": [],
+  "detalle": [
+    {
+      "id": 1,
+      "slug": "infernus",
+      "nombre": "Infernus",
+      "en_api": true,
+      "en_estadisticas": true,
+      "partidas": 4592
+    },
+    {
+      "id": 2,
+      "slug": "seven",
+      "nombre": "Seven",
+      "en_api": true,
+      "en_estadisticas": true,
+      "partidas": 3647
+    },
+    {
+      "id": 3,
+      "slug": "vindicta",
+      "nombre": "Vindicta",
+      "en_api": true,
+      "en_estadisticas": true,
+      "partidas": 3116
+    },
+    {
+      "id": 4,
+      "slug": "lady_geist",
+      "nombre": "Lady Geist",
+      "en_api": true,
+      "en_estadisticas": true,
+      "partidas": 2893
+    },
+    {
+      "id": 6,
+      "slug": "abrams",
+      "nombre": "Abrams",
+      "en_api": true,
+      "en_estadisticas": true,
+      "partidas": 3876
+    },
+    {
+      "id": 7,
+      "slug": "wraith",
+      "nombre": "Wraith",
+      "en_api": true,
+      "en_estadisticas": true,
+      "partidas": 4121
+    },
+    {
+      "id": 8,
+      "slug": "mcginnis",
+      "nombre": "McGinnis",
+      "en_api": true,
+      "en_estadisticas": true,
+      "partidas": 1501
+    },
+    {
+      "id": 10,
+      "slug": "paradox",
+      "nombre": "Paradox",
+      "en_api": true,
+      "en_estadisticas": true,
+      "partidas": 3257
+    },
+    {
+      "id": 11,
+      "slug": "dynamo",
+      "nombre": "Dynamo",
+      "en_api": true,
+      "en_estadisticas": true,
+      "partidas": 2651
+    },
+    {
+      "id": 12,
+      "slug": "kelvin",
+      "nombre": "Kelvin",
+      "en_api": true,
+      "en_estadisticas": true,
+      "partidas": 1968
+    },
+    {
+      "id": 13,
+      "slug": "haze",
+      "nombre": "Haze",
+      "en_api": true,
+      "en_estadisticas": true,
+      "partidas": 5235
+    },
+    {
+      "id": 14,
+      "slug": "holliday",
+      "nombre": "Holliday",
+      "en_api": true,
+      "en_estadisticas": true,
+      "partidas": 2666
+    },
+    {
+      "id": 15,
+      "slug": "bebop",
+      "nombre": "Bebop",
+      "en_api": true,
+      "en_estadisticas": true,
+      "partidas": 4484
+    },
+    {
+      "id": 16,
+      "slug": "calico",
+      "nombre": "Calico",
+      "en_api": true,
+      "en_estadisticas": true,
+      "partidas": 1842
+    },
+    {
+      "id": 17,
+      "slug": "grey_talon",
+      "nombre": "Grey Talon",
+      "en_api": true,
+      "en_estadisticas": true,
+      "partidas": 2027
+    },
+    {
+      "id": 18,
+      "slug": "mo_and_krill",
+      "nombre": "Mo & Krill",
+      "en_api": true,
+      "en_estadisticas": true,
+      "partidas": 2197
+    },
+    {
+      "id": 19,
+      "slug": "shiv",
+      "nombre": "Shiv",
+      "en_api": true,
+      "en_estadisticas": true,
+      "partidas": 3664
+    },
+    {
+      "id": 20,
+      "slug": "ivy",
+      "nombre": "Ivy",
+      "en_api": true,
+      "en_estadisticas": true,
+      "partidas": 2946
+    },
+    {
+      "id": 25,
+      "slug": "warden",
+      "nombre": "Warden",
+      "en_api": true,
+      "en_estadisticas": true,
+      "partidas": 1960
+    },
+    {
+      "id": 27,
+      "slug": "yamato",
+      "nombre": "Yamato",
+      "en_api": true,
+      "en_estadisticas": true,
+      "partidas": 2601
+    },
+    {
+      "id": 31,
+      "slug": "lash",
+      "nombre": "Lash",
+      "en_api": true,
+      "en_estadisticas": true,
+      "partidas": 4420
+    },
+    {
+      "id": 35,
+      "slug": "viscous",
+      "nombre": "Viscous",
+      "en_api": true,
+      "en_estadisticas": true,
+      "partidas": 1509
+    },
+    {
+      "id": 50,
+      "slug": "pocket",
+      "nombre": "Pocket",
+      "en_api": true,
+      "en_estadisticas": true,
+      "partidas": 2401
+    },
+    {
+      "id": 52,
+      "slug": "mirage",
+      "nombre": "Mirage",
+      "en_api": true,
+      "en_estadisticas": true,
+      "partidas": 1081
+    },
+    {
+      "id": 58,
+      "slug": "vyper",
+      "nombre": "Vyper",
+      "en_api": true,
+      "en_estadisticas": true,
+      "partidas": 1357
+    },
+    {
+      "id": 60,
+      "slug": "sinclair",
+      "nombre": "Sinclair",
+      "en_api": true,
+      "en_estadisticas": true,
+      "partidas": 988
+    },
+    {
+      "id": 63,
+      "slug": "mina",
+      "nombre": "Mina",
+      "en_api": true,
+      "en_estadisticas": true,
+      "partidas": 3489
+    },
+    {
+      "id": 64,
+      "slug": "drifter",
+      "nombre": "Drifter",
+      "en_api": true,
+      "en_estadisticas": true,
+      "partidas": 4591
+    },
+    {
+      "id": 65,
+      "slug": "venator",
+      "nombre": "Venator",
+      "en_api": true,
+      "en_estadisticas": true,
+      "partidas": 3991
+    },
+    {
+      "id": 66,
+      "slug": "victor",
+      "nombre": "Victor",
+      "en_api": true,
+      "en_estadisticas": true,
+      "partidas": 3174
+    },
+    {
+      "id": 67,
+      "slug": "paige",
+      "nombre": "Paige",
+      "en_api": true,
+      "en_estadisticas": true,
+      "partidas": 3732
+    },
+    {
+      "id": 69,
+      "slug": "the_doorman",
+      "nombre": "The Doorman",
+      "en_api": true,
+      "en_estadisticas": true,
+      "partidas": 1577
+    },
+    {
+      "id": 72,
+      "slug": "billy",
+      "nombre": "Billy",
+      "en_api": true,
+      "en_estadisticas": true,
+      "partidas": 3484
+    },
+    {
+      "id": 76,
+      "slug": "graves",
+      "nombre": "Graves",
+      "en_api": true,
+      "en_estadisticas": true,
+      "partidas": 4063
+    },
+    {
+      "id": 77,
+      "slug": "apollo",
+      "nombre": "Apollo",
+      "en_api": true,
+      "en_estadisticas": true,
+      "partidas": 2536
+    },
+    {
+      "id": 78,
+      "slug": "deadman_danny",
+      "nombre": "Deadman Danny",
+      "en_api": true,
+      "en_estadisticas": true,
+      "partidas": 1709
+    },
+    {
+      "id": 79,
+      "slug": "rem",
+      "nombre": "Rem",
+      "en_api": true,
+      "en_estadisticas": true,
+      "partidas": 2657
+    },
+    {
+      "id": 80,
+      "slug": "silver",
+      "nombre": "Silver",
+      "en_api": true,
+      "en_estadisticas": true,
+      "partidas": 2540
+    },
+    {
+      "id": 81,
+      "slug": "celeste",
+      "nombre": "Celeste",
+      "en_api": true,
+      "en_estadisticas": true,
+      "partidas": 2120
+    },
+    {
+      "id": 84,
+      "slug": "rat_king",
+      "nombre": "Rat King",
+      "en_api": true,
+      "en_estadisticas": true,
+      "partidas": 2713
+    },
+    {
+      "id": 85,
+      "slug": "solomon",
+      "nombre": "Solomon",
+      "en_api": true,
+      "en_estadisticas": true,
+      "partidas": 846
+    },
+    {
+      "id": 86,
+      "slug": "violet",
+      "nombre": "Violet",
+      "en_api": true,
+      "en_estadisticas": true,
+      "partidas": 1300
+    },
+    {
+      "id": 87,
+      "slug": "nurse_harrow",
+      "nombre": "Nurse Harrow",
+      "en_api": true,
+      "en_estadisticas": true,
+      "partidas": 1675
+    },
+    {
+      "id": 88,
+      "slug": "baba",
+      "nombre": "Baba",
+      "en_api": true,
+      "en_estadisticas": true,
+      "partidas": 803
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "request": {
+    "endpoint": "/v1/assets/heroes",
+    "params": {
+      "only_active": "true"
+    }
+  },
+  "rows": 44,
+  "sha256": "58caa8653dcf304949e7879acdc8c7ed13e1c2572e4f858bbd96a415a5f9d81a",
+  "retrieved_at": "2026-11-10T16:32:27.833736+00:00"
+}

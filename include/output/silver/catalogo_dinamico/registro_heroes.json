@@ -1,0 +1,222 @@
+{
+  "1": {
+    "slug": "infernus",
+    "nombre": "Infernus",
+    "desde": "entrega 3"
+  },
+  "2": {
+    "slug": "seven",
+    "nombre": "Seven",
+    "desde": "entrega 3"
+  },
+  "3": {
+    "slug": "vindicta",
+    "nombre": "Vindicta",
+    "desde": "entrega 3"
+  },
+  "4": {
+    "slug": "lady_geist",
+    "nombre": "Lady Geist",
+    "desde": "entrega 3"
+  },
+  "6": {
+    "slug": "abrams",
+    "nombre": "Abrams",
+    "desde": "entrega 3"
+  },
+  "7": {
+    "slug": "wraith",
+    "nombre": "Wraith",
+    "desde": "entrega 3"
+  },
+  "8": {
+    "slug": "mcginnis",
+    "nombre": "McGinnis",
+    "desde": "entrega 3"
+  },
+  "10": {
+    "slug": "paradox",
+    "nombre": "Paradox",
+    "desde": "entrega 3"
+  },
+  "11": {
+    "slug": "dynamo",
+    "nombre": "Dynamo",
+    "desde": "entrega 3"
+  },
+  "12": {
+    "slug": "kelvin",
+    "nombre": "Kelvin",
+    "desde": "entrega 3"
+  },
+  "13": {
+    "slug": "haze",
+    "nombre": "Haze",
+    "desde": "entrega 3"
+  },
+  "14": {
+    "slug": "holliday",
+    "nombre": "Holliday",
+    "desde": "entrega 3"
+  },
+  "15": {
+    "slug": "bebop",
+    "nombre": "Bebop",
+    "desde": "entrega 3"
+  },
+  "16": {
+    "slug": "calico",
+    "nombre": "Calico",
+    "desde": "entrega 3"
+  },
+  "17": {
+    "slug": "grey_talon",
+    "nombre": "Grey Talon",
+    "desde": "entrega 3"
+  },
+  "18": {
+    "slug": "mo_and_krill",
+    "nombre": "Mo & Krill",
+    "desde": "entrega 3"
+  },
+  "19": {
+    "slug": "shiv",
+    "nombre": "Shiv",
+    "desde": "entrega 3"
+  },
+  "20": {
+    "slug": "ivy",
+    "nombre": "Ivy",
+    "desde": "entrega 3"
+  },
+  "25": {
+    "slug": "warden",
+    "nombre": "Warden",
+    "desde": "entrega 3"
+  },
+  "27": {
+    "slug": "yamato",
+    "nombre": "Yamato",
+    "desde": "entrega 3"
+  },
+  "31": {
+    "slug": "lash",
+    "nombre": "Lash",
+    "desde": "entrega 3"
+  },
+  "35": {
+    "slug": "viscous",
+    "nombre": "Viscous",
+    "desde": "entrega 3"
+  },
+  "50": {
+    "slug": "pocket",
+    "nombre": "Pocket",
+    "desde": "entrega 3"
+  },
+  "52": {
+    "slug": "mirage",
+    "nombre": "Mirage",
+    "desde": "entrega 3"
+  },
+  "58": {
+    "slug": "vyper",
+    "nombre": "Vyper",
+    "desde": "entrega 3"
+  },
+  "60": {
+    "slug": "sinclair",
+    "nombre": "Sinclair",
+    "desde": "entrega 3"
+  },
+  "63": {
+    "slug": "mina",
+    "nombre": "Mina",
+    "desde": "entrega 3"
+  },
+  "64": {
+    "slug": "drifter",
+    "nombre": "Drifter",
+    "desde": "entrega 3"
+  },
+  "65": {
+    "slug": "venator",
+    "nombre": "Venator",
+    "desde": "entrega 3"
+  },
+  "66": {
+    "slug": "victor",
+    "nombre": "Victor",
+    "desde": "entrega 3"
+  },
+  "67": {
+    "slug": "paige",
+    "nombre": "Paige",
+    "desde": "entrega 3"
+  },
+  "69": {
+    "slug": "the_doorman",
+    "nombre": "The Doorman",
+    "desde": "entrega 3"
+  },
+  "72": {
+    "slug": "billy",
+    "nombre": "Billy",
+    "desde": "entrega 3"
+  },
+  "76": {
+    "slug": "graves",
+    "nombre": "Graves",
+    "desde": "entrega 3"
+  },
+  "77": {
+    "slug": "apollo",
+    "nombre": "Apollo",
+    "desde": "entrega 3"
+  },
+  "78": {
+    "slug": "deadman_danny",
+    "nombre": "Deadman Danny",
+    "desde": "2026-11-01"
+  },
+  "79": {
+    "slug": "rem",
+    "nombre": "Rem",
+    "desde": "entrega 3"
+  },
+  "80": {
+    "slug": "silver",
+    "nombre": "Silver",
+    "desde": "entrega 3"
+  },
+  "81": {
+    "slug": "celeste",
+    "nombre": "Celeste",
+    "desde": "entrega 3"
+  },
+  "84": {
+    "slug": "rat_king",
+    "nombre": "Rat King",
+    "desde": "2026-11-01"
+  },
+  "85": {
+    "slug": "solomon",
+    "nombre": "Solomon",
+    "desde": "2026-11-01"
+  },
+  "86": {
+    "slug": "violet",
+    "nombre": "Violet",
+    "desde": "2026-11-01"
+  },
+  "87": {
+    "slug": "nurse_harrow",
+    "nombre": "Nurse Harrow",
+    "desde": "2026-11-01"
+  },
+  "88": {
+    "slug": "baba",
+    "nombre": "Baba",
+    "desde": "2026-11-01"
+  }
+}

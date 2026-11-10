@@ -1,0 +1,15 @@
+{
+  "request": {
+    "endpoint": "/v1/analytics/hero-stats",
+    "params": {
+      "min_unix_timestamp": 1792627200,
+      "max_unix_timestamp": 1793836799,
+      "game_mode": "normal",
+      "match_mode": "ranked",
+      "min_matches": 1
+    }
+  },
+  "rows": 44,
+  "sha256": "d67e611adf0db2104ba2cd7b1141389cb7a4f5802056a8c1d776aba1e2250bf7",
+  "retrieved_at": "2026-11-10T16:32:27.852483+00:00"
+}
