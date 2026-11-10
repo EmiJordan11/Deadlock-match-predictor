@@ -6,18 +6,21 @@ Uso, desde la raíz del repositorio:
 
 Qué hace, en orden:
 
-1. Lee los cortes que deja el DAG `deadlock_ingest` en include/output/silver/ y el bronce
-   de partidas, para contar qué se filtró en cada paso.
-2. Entrena el modelo elegido en la Entrega 3 (notebooks/entrega3_modelado_v3.ipynb, sección 5):
-   una regresión logística sobre las 38 columnas de composición, sin escalar, multa l2 y
-   C = 0,1, con el último corte de entrenamiento. Mide de nuevo, con el mismo walk-forward,
-   la tabla de comparación que muestra la aplicación.
-3. Verifica que las predicciones coincidan con el modelo que guardó el notebook
-   (notebooks/modelo_entrega3_composicion.joblib).
-4. Arma los gráficos con Altair y escribe docs/index.html, que GitHub Pages publica tal cual.
-   Baja una sola vez los retratos de los héroes y las librerías de Vega a docs/.
+1. Lee los cortes que deja el DAG `deadlock_ingest` en include/output/silver/catalogo_dinamico/,
+   cada uno con su catalogo de heroes (hoy, 44) y el conteo del filtro de calidad.
+2. Entrena el modelo elegido (notebooks/entrega3_modelado_v4_heroes_nuevos.ipynb, seccion 5):
+   una regresion logistica sobre las columnas de composicion, sin escalar, multa l2 y
+   C = 0,1, con el ultimo corte de entrenamiento. Mide de nuevo, con el mismo walk-forward,
+   la tabla de comparacion que muestra la aplicacion, y compara en el test contra el modelo
+   de septiembre sin reentrenar (cortes de la Entrega 3, 38 heroes).
+3. Verifica que las predicciones coincidan con el modelo que guardo el notebook
+   (notebooks/modelo_entrega3_composicion.joblib: la ruta es siempre la misma, y la rama
+   decide que modelo tiene adentro).
+4. Arma los graficos con Altair y escribe docs/index.html, que GitHub Pages publica tal cual.
+   Baja una sola vez los retratos de los heroes y las librerias de Vega a docs/.
 
-Si los datos cambian (otro corte, más partidas), correrlo de nuevo actualiza la aplicación.
+Si los datos cambian (otro corte, mas partidas, un heroe nuevo), correrlo de nuevo actualiza
+la aplicacion: los heroes salen del catalogo de los cortes, no de una lista fija.
 """
 from __future__ import annotations
 
@@ -49,23 +52,28 @@ warnings.filterwarnings("ignore")
 RAIZ = Path(__file__).resolve().parent.parent
 PLANTILLA = RAIZ / "app" / "plantilla.html"
 SALIDA = RAIZ / "docs"
-PLATA = RAIZ / "include" / "output" / "silver"
+PLATA = RAIZ / "include" / "output" / "silver" / "catalogo_dinamico"   # los cortes con el catalogo de cada corte
+PARTICION = "dias=14/k=100"                                              # la ventana de estadisticas y el shrinkage
+PLATA_E3 = RAIZ / "include" / "output" / "silver"                        # los cortes de la Entrega 3 (38 heroes)
 BRONCE = RAIZ / "include" / "output" / "bronze"
-HEROES_API = RAIZ / "include" / "output" / "heroes_api_2026-10-26.json"
 MODELO_NOTEBOOK = RAIZ / "notebooks" / "modelo_entrega3_composicion.joblib"
 NOTEBOOK_E2 = RAIZ / "notebooks" / "entrega2_eda_hipotesis.ipynb"
 sys.path.insert(0, str(RAIZ / "include"))
+from deadlock import catalogo as cat  # noqa: E402
 from deadlock import schema  # noqa: E402
-from deadlock.transform import parse_match  # noqa: E402
 
 SEMILLA = 42
 np.random.seed(SEMILLA)
 
-# ---- lo que se eligió en la Entrega 3 (notebook v3) -------------------------------------
-C_ELEGIDO = 0.1          # sección 5.4: sin escalar, multa l2
+# ---- lo que se eligió (notebook v4, la comparación de la Entrega 3 con los héroes nuevos) ------
+C_ELEGIDO = 0.1          # sección 5.4: sin escalar, multa l2 (la misma configuración que en septiembre)
 VENTANA = 1              # sección 5.5: se entrena con el último corte de entrenamiento
-C_E3_ANTERIOR = 0.01     # el modelo presentado en la Entrega 3 (winrates, 3 columnas), como referencia
-C_CRUCES = 0.001         # sección 6.2: la mejor C para la composición con los cruces
+C_WINRATES = 1.0         # sección 5.1: la mejor C para los tres winrates de la API
+C_CRUCES = 0.001         # la mejor C para la composición con los cruces (notebook v3, sección 6.2)
+# sección 5.3: los mejores hiperparámetros de cada familia sobre la composición
+ARBOL = {"max_depth": 10, "min_samples_leaf": 500}
+BOSQUE = {"max_depth": None, "min_samples_leaf": 20}
+BOOSTING = {"learning_rate": 0.1, "max_iter": 100, "max_leaf_nodes": 7}
 
 # ---- las hipótesis de la Entrega 2 (notebooks/entrega2_eda_hipotesis.ipynb, sección 7) ----
 # Se midieron sobre el corte de esa entrega; build_app comprueba que sigan escritas en el notebook.
@@ -81,8 +89,7 @@ VENDOR = {"vega.min.js": "https://cdn.jsdelivr.net/npm/vega@6.4.0/build/vega.min
 TEXT, MUTED, LINE, GRID = "#ece2cc", "#a3977f", "#4a3f30", "#2a231b"
 BRASS, AMBER, SAPPHIRE, MEDIO, FONDO = "#c9a46a", "#e8922e", "#4f93e3", "#8f8473", "#17130f"
 FUENTE = "Barlow Condensed"
-COMP = schema.COMPOSICION
-WINRATES = ["hero_winrate_adv_mean", "counter_winrate_adv_mean", "synergy_winrate_adv_mean"]
+WINRATES =["hero_winrate_adv_mean", "counter_winrate_adv_mean", "synergy_winrate_adv_mean"]
 REGLA = ["hero_winrate_adv_mean"]
 ORDEN_DRAFT = "ABBAABBAABBA"
 NUMEROS = {1: "una", 2: "dos", 3: "tres", 4: "cuatro", 5: "cinco", 6: "seis", 7: "siete", 8: "ocho", 9: "nueve"}
@@ -186,12 +193,22 @@ def elegido():
 # 1. Los datos
 # =====================================================================================
 print("· leyendo los cortes de", PLATA.relative_to(RAIZ))
-partes = []
-for carpeta in sorted(PLATA.glob("corte=*")):
+partes, catalogos, NOMBRES = [], {}, {}
+for carpeta in sorted(PLATA.glob(f"corte=*/{PARTICION}")):
+    corte = carpeta.parts[-3].split("=")[1]
     t = pd.read_parquet(carpeta / "features.parquet")
-    t["corte"] = carpeta.name.split("=")[1]
+    t["corte"] = corte
     partes.append(t)
+    catalogo = json.loads((carpeta / "catalogo.json").read_text(encoding="utf-8"))
+    catalogos[corte] = cat.heroes_de(catalogo)
+    NOMBRES.update({d["id"]: d["nombre"] for d in catalogo["detalle"]})
+assert partes, f"no hay cortes en {PLATA}: correr el DAG deadlock_ingest"
+# el catalogo de la app es la union de los catalogos de los cortes; un heroe que no estaba en un corte vale 0 ahi
+HEROES = sorted({h for lista in catalogos.values() for h in lista})
+COMP = schema.composicion(HEROES)
+NUEVOS = [(i, s) for i, s in HEROES if i not in schema.HERO_IDS]
 df = pd.concat(partes, ignore_index=True)
+df[COMP] = df[COMP].fillna(0).astype(int)
 assert df["match_id"].is_unique, "una partida aparece en dos cortes"
 y = df["winner"].eq("A").astype(int)
 CORTES = sorted(df["corte"].unique())
@@ -206,34 +223,14 @@ ultimos = sorted(g_train.unique())[-VENTANA:]
 X_final, y_final = X_train[g_train.isin(ultimos)], y_train[g_train.isin(ultimos)]
 FECHA_TRAIN = fecha(ultimos[-1])
 
-# el embudo: el bronce de partidas pasado de nuevo por el filtro de calidad del DAG
-def motivo(raw: dict) -> str:
-    eq = {"Team0": [], "Team1": []}
-    for j in raw.get("players") or []:
-        if j.get("team") in eq and j.get("hero_id") is not None:
-            eq[j["team"]].append(j["hero_id"])
-    if len(eq["Team0"]) != 6 or len(eq["Team1"]) != 6:
-        return "incompleto"
-    if any(h not in schema.HERO_IDS for h in eq["Team0"] + eq["Team1"]):
-        return "catalogo"
-    if len(set(eq["Team0"] + eq["Team1"])) != 12:
-        return "repetido"
-    if raw.get("winning_team") not in ("Team0", "Team1"):
-        return "ganador"
-    return "ok"
-
-
-print("· contando el filtro de calidad sobre el bronce")
+# el embudo: lo que conto el filtro de calidad del DAG en cada corte (filtro_calidad.json)
 embudo = Counter()
 for c in CORTES:
-    for pag in sorted((BRONCE / f"corte={c}" / "matches").glob("*.json.gz")):
-        with gzip.open(pag, "rt", encoding="utf-8") as f:
-            for raw in json.load(f):
-                m = motivo(raw)
-                assert (m == "ok") == (parse_match(raw) is not None), "el conteo no coincide con parse_match"
-                embudo["leidas"] += 1
-                embudo[m] += 1
+    filtro = json.loads((PLATA / f"corte={c}" / PARTICION / "filtro_calidad.json").read_text(encoding="utf-8"))
+    embudo["leidas"] += filtro["leidas"]
+    embudo.update(filtro["descartadas"])
 por_corte = df.groupby("corte").size()
+assert embudo["leidas"] - sum(v for k, v in embudo.items() if k != "leidas") == len(df), "el filtro no cierra con las filas"
 
 # =====================================================================================
 # 2. El modelo
@@ -259,7 +256,7 @@ if MODELO_NOTEBOOK.exists():
     coincide = float(np.abs(p_nb - p_test).max())
     if coincide > 1e-9:
         avisos.append(f"las predicciones no coinciden con el modelo del notebook (diferencia máxima {coincide:.2e}): "
-                      "¿cambiaron los datos? Volvé a correr el notebook v3")
+                      "¿cambiaron los datos? Volvé a correr el notebook v4")
 else:
     avisos.append(f"no está {MODELO_NOTEBOOK.relative_to(RAIZ)}: no se pudo comparar con el notebook")
 
@@ -277,11 +274,11 @@ ELEGIDO_NOMBRE = "Logística sobre la composición · elegida"
 candidatos = {
     "Piso": (armar(DummyClassifier(strategy="most_frequent"), REGLA), "—"),
     "Regla de una columna (winrate de la API)": (armar(LogisticRegression(), REGLA), "1"),
-    "Logística con los winrates de la API": (armar(LogisticRegression(max_iter=5000, C=10), WINRATES), "3"),
+    "Logística con los winrates de la API": (armar(LogisticRegression(max_iter=5000, C=C_WINRATES), WINRATES), "3"),
     ELEGIDO_NOMBRE: (elegido(), str(len(COMP))),
-    "Random forest sobre la composición": (armar(RandomForestClassifier(n_estimators=200, min_samples_leaf=20, n_jobs=1, random_state=SEMILLA), COMP), str(len(COMP))),
-    "Gradient boosting sobre la composición": (armar(HistGradientBoostingClassifier(learning_rate=0.1, max_iter=100, max_leaf_nodes=7, random_state=SEMILLA), COMP), str(len(COMP))),
-    "Árbol de decisión sobre la composición": (armar(DecisionTreeClassifier(max_depth=10, min_samples_leaf=100, random_state=SEMILLA), COMP), str(len(COMP))),
+    "Random forest sobre la composición": (armar(RandomForestClassifier(n_estimators=200, n_jobs=1, random_state=SEMILLA, **BOSQUE), COMP), str(len(COMP))),
+    "Gradient boosting sobre la composición": (armar(HistGradientBoostingClassifier(random_state=SEMILLA, **BOOSTING), COMP), str(len(COMP))),
+    "Árbol de decisión sobre la composición": (armar(DecisionTreeClassifier(random_state=SEMILLA, **ARBOL), COMP), str(len(COMP))),
 }
 comparacion = {n: (*medir(p), cols) for n, (p, cols) in candidatos.items()}
 auc_cv, sd_cv, _ = comparacion[ELEGIDO_NOMBRE]
@@ -292,24 +289,36 @@ if mejor_otro - auc_cv > sd_cv:
 azar = medir(elegido(), cv=StratifiedKFold(n_splits=5, shuffle=True, random_state=SEMILLA))[0] - auc_cv
 por_C = [medir(armar(LogisticRegression(max_iter=5000, C=c), COMP, escalar=False))[0] for c in (0.01, 0.1, 1, 10)]
 auc_cruces = medir(Pipeline([("elegir", Columnas(tuple(COMP))), ("cruces", Cruces()), ("modelo", LogisticRegression(max_iter=5000, C=C_CRUCES))]))[0]
-modelo_e3 = armar(LogisticRegression(max_iter=5000, C=C_E3_ANTERIOR), WINRATES).fit(X_final, y_final)
-auc_e3 = roc_auc_score(y_test, modelo_e3.predict_proba(X_test)[:, 1])
+# la referencia que importa ahora: el modelo de septiembre (Entrega 3, 38 heroes), sin reentrenar
+e3 = pd.concat([pd.read_parquet(p).assign(corte=p.parent.name.split("=")[1])
+                for p in sorted(PLATA_E3.glob("corte=*/features.parquet"))], ignore_index=True)
+cortes_e3 = sorted(e3["corte"].unique())
+e3_final = e3["corte"].isin(cortes_e3[-1 - VENTANA:-1])          # los de entrenamiento final de la Entrega 3
+modelo_sep = armar(LogisticRegression(max_iter=5000, C=C_ELEGIDO), schema.COMPOSICION, escalar=False).fit(
+    e3[e3_final], e3.loc[e3_final, "winner"].eq("A").astype(int))
+p_sep = modelo_sep.predict_proba(X_test)[:, 1]
+auc_sep, acc_sep = roc_auc_score(y_test, p_sep), accuracy_score(y_test, p_sep >= 0.5)
+FECHA_SEP = fecha(cortes_e3[-2])
 
 # =====================================================================================
 # 3. Los héroes
 # =====================================================================================
-api = {h["id"]: h for h in json.load(open(HEROES_API, encoding="utf-8"))}
-with open(PLATA / f"corte={ultimos[-1]}" / "stat_tables.pkl", "rb") as f:
+# nombres e imagenes: la lista de heroes de la API que el DAG guardo en el bronce del corte mas reciente
+api = {h["id"]: h for h in json.load(open(BRONCE / f"corte={CORTE_TEST}" / "heroes" / "heroes.json", encoding="utf-8"))}
+with open(PLATA / f"corte={ultimos[-1]}" / PARTICION / "stat_tables.pkl", "rb") as f:
     adv_api = pickle.load(f)["hero"]
 heroes = []
-for hid, slug in schema.HEROES:
+for hid, slug in HEROES:
     col = f"hero_{slug}"
     en = df[col].ne(0)
     gano = (df[col].eq(1) & y.eq(1)) | (df[col].eq(-1) & y.eq(0))
-    imgs = api[hid]["images"]
-    descargar(imgs["icon_hero_card_webp"], SALIDA / "heroes" / f"{slug}_card.webp")
-    descargar(imgs["icon_image_small_webp"], SALIDA / "heroes" / f"{slug}_sm.webp")
-    heroes.append({"slug": slug, "nombre": api[hid]["name"], "w": round(float(w[col]), 6),
+    if hid in api:
+        imgs = api[hid]["images"]
+        descargar(imgs["icon_hero_card_webp"], SALIDA / "heroes" / f"{slug}_card.webp")
+        descargar(imgs["icon_image_small_webp"], SALIDA / "heroes" / f"{slug}_sm.webp")
+    else:
+        avisos.append(f"el heroe {hid} ({slug}) no esta en la API de assets: queda sin retrato")
+    heroes.append({"slug": slug, "nombre": NOMBRES.get(hid, slug), "w": round(float(w[col]), 6),
                    "pts": round(float((sig(w[col]) - 0.5) * 100), 2), "api": round(50 + 100 * adv_api.get(hid, 0.0), 2),
                    "partidas": int(en.sum()), "wr": round(float(100 * gano[en].mean()), 2),
                    "card": f"heroes/{slug}_card.webp", "sm": f"heroes/{slug}_sm.webp"})
@@ -464,10 +473,17 @@ ejemplos = [{"a": [k[5:] for k in COMP if test.loc[i, k] == 1], "b": [k[5:] for 
 
 n_cortes = len(CORTES)
 por = int(por_corte.iloc[0]) if por_corte.nunique() == 1 else None
-descartes = [("Algún equipo sin seis héroes", "incompleto", "Abandonos y datos parciales."),
-             ("Héroe fuera del catálogo", "catalogo", f"Solo los {len(COMP)} héroes activos al momento de los cortes."),
-             ("Un héroe repetido", "repetido", "Partidas con el mismo héroe en los dos equipos."),
-             ("Sin ganador", "ganador", "Partidas sin un equipo ganador definido.")]
+descartes = [("Algún equipo sin seis héroes", "equipo_incompleto", "Abandonos y datos parciales."),
+             ("Héroe fuera del catálogo", "heroe_fuera_de_catalogo",
+              "El catálogo de cada corte incluye a todos los héroes que aparecen en sus partidas, nuevos incluidos."),
+             ("Un héroe repetido", "heroe_repetido", "Partidas con el mismo héroe en los dos equipos."),
+             ("Sin ganador", "sin_ganador", "Partidas sin un equipo ganador definido.")]
+descartadas = sum(embudo[k] for _, k, _ in descartes)
+filtro_texto = ("El modo de juego y el ranked se filtran en el pedido mismo a la API, así que el filtro de calidad del DAG no tuvo nada "
+                "que descartar." if descartadas == 0 else
+                f"El modo de juego y el ranked se filtran en el pedido mismo a la API; el filtro de calidad del DAG descartó apenas "
+                f"{entero(descartadas)} partidas, y ninguna por tener un héroe nuevo. Con el catálogo fijo de la Entrega 3, en cambio, "
+                f"se habrían perdido todas las partidas con alguno de los héroes nuevos.")
 fila = lambda paso, n, que: f"<tr><td>{paso}</td><td class='n'>{n}</td><td>{que}</td></tr>"
 tabla_filtros = ("<div class='tabla'><table><thead><tr><th>Paso</th><th>Partidas</th><th>Qué se hizo</th></tr></thead><tbody>"
                  + fila("Pedidas a la API", entero(embudo["leidas"]),
@@ -496,7 +512,10 @@ VALORES = {
     "fecha_fin_larga": fecha(CORTES[-1], anio=True),
     "fechas_lista": ", ".join(fecha(c) for c in CORTES[:-1]) + f" y {fecha(CORTES[-1])} de {CORTES[-1][:4]}",
     "cmin": num(datos_cortes["pct"].min()) + " %", "cmax": num(datos_cortes["pct"].max()) + " %",
-    "n_columnas": str(len(schema.COLUMNS)), "n_comp": str(len(COMP)),
+    "n_columnas": str(len(schema.columnas(HEROES))), "n_comp": str(len(COMP)), "filtro_texto": filtro_texto,
+    "n_nuevos": NUMEROS.get(len(NUEVOS), str(len(NUEVOS))),
+    "nuevos_lista": ", ".join(NOMBRES.get(i, s) for i, s in NUEVOS[:-1]) + (f" y {NOMBRES.get(NUEVOS[-1][0], NUEVOS[-1][1])}" if NUEVOS else ""),
+    "con_nuevo": pct(float(df[[f"hero_{s}" for _, s in NUEVOS]].ne(0).any(axis=1).mean()), 0) if NUEVOS else "0 %",
     "n_ventajas": str(len(schema.COUNTER + schema.SYNERGY + schema.HERO_WINRATE)),
     "tabla_filtros": tabla_filtros, "tabla_comparacion": tabla_comparacion,
     "dec1": num(dec["pct"].iloc[0]) + " %", "dec10": num(dec["pct"].iloc[-1]) + " %",
@@ -504,7 +523,8 @@ VALORES = {
     "mmin": num(mid.min()) + " %", "mmax": num(mid.max()) + " %", "por_decil": entero(int(dec["size"].median())),
     **ENTREGA_2,
     "pasos": str(cv.get_n_splits(groups=g_train)), "azar": num(abs(azar), 3),
-    "c_elegido": num(C_ELEGIDO, 1), "c_min": num(min(por_C), 4), "c_max": num(max(por_C), 4), "auc_e3": num(auc_e3, 3),
+    "c_elegido": num(C_ELEGIDO, 1), "c_min": num(min(por_C), 4), "c_max": num(max(por_C), 4),
+    "auc_sep": num(auc_sep, 3), "acc_sep": pct(acc_sep), "fecha_sep": FECHA_SEP,
     "heroes_mas": f"{H.loc[mas.index[0], 'nombre']} ({num(mas.iloc[0])} puntos para su equipo) y {H.loc[mas.index[1], 'nombre']}".replace("(", "(+", 1),
     "heroes_menos": f"{H.loc[menos.index[0], 'nombre']} ({num(menos.iloc[0])}) y {H.loc[menos.index[1], 'nombre']}",
     "b0": num(b0, 3), "n_cruces": entero(len(COMP) * (len(COMP) - 1) // 2), "auc_cv_3": num(auc_cv, 3), "auc_cruces": num(auc_cruces, 3),
@@ -532,7 +552,8 @@ for nombre, url in VENDOR.items():
 print(f"\nescrita {(SALIDA / 'index.html').relative_to(RAIZ)} ({len(html.encode()) / 1024:.0f} KB)")
 print(f"partidas: {len(df)} en {n_cortes} cortes · test {CORTE_TEST} · entrenado con {', '.join(ultimos)}")
 print(f"embudo: {dict(embudo)}")
-print(f"test: AUC {auc_test:.4f} · accuracy {acc_test:.4f} · piso {piso_acc:.4f} · modelo de la Entrega 3 {auc_e3:.4f}")
+print(f"héroes: {len(HEROES)} ({len(NUEVOS)} nuevos respecto de la Entrega 3)")
+print(f"test: AUC {auc_test:.4f} · accuracy {acc_test:.4f} · piso {piso_acc:.4f} · modelo de septiembre sin reentrenar {auc_sep:.4f}")
 print("walk-forward:")
 for n, (m, s, _) in comparacion.items():
     print(f"   {m:.4f} ± {s:.4f}  {n}")

@@ -307,11 +307,11 @@ footer p { margin: 0 0 6px; }
   <div class="marco grafico"><div id="g-datos" class="vis" role="img" aria-label="Porcentaje de partidas que ganó el Equipo A en cada fecha"></div></div>
   <p class="mirar"><strong>Qué mirar.</strong> Los {{n_cortes_txt}} rombos quedan entre {{cmin}} y {{cmax}}, pegados a la línea del 50 %. Lo que el modelo aprenda no puede venir de la etiqueta A o B: tiene que venir de los héroes.</p>
   <details class="como"><summary>Cómo lo sabemos</summary><div class="cuerpo">
-    <div><h4>De dónde salen</h4><p>Del DAG <code>deadlock_ingest</code> (Airflow 3), que le pide a <code>api.deadlock-api.com</code> las partidas ranked y las estadísticas de héroes, de cruces y de parejas. Fechas de corte: {{fechas_lista}}.</p></div>
+    <div><h4>De dónde salen</h4><p>Del DAG <code>deadlock_ingest</code> (Airflow 3), que le pide a <code>api.deadlock-api.com</code> las partidas ranked y las estadísticas de héroes, de cruces y de parejas. Fechas de corte: {{fechas_lista}}. El DAG arma el catálogo de héroes de cada corte con la API de assets, las estadísticas y las partidas, así que un héroe nuevo entra solo: hoy son {{n_comp}}.</p></div>
     <div><h4>Qué es una fila</h4><p>Una partida. El Equipo A es el <code>Team0</code> de la API, asignado sin relación con la habilidad. {{n_columnas}} columnas: <strong>{{n_comp}} de composición</strong> (+1 si el héroe juega en A, −1 si juega en B, 0 si no está), {{n_ventajas}} ventajas calculadas con las estadísticas, metadatos y el ganador.</p></div>
     <div><h4>Las dos ventanas</h4><p>Las estadísticas salen de los 14 días <strong>anteriores</strong> a cada corte, y las partidas, del día del corte. Ninguna de las {{partidas}} partidas es anterior a su corte, así que ninguna fila está dentro de las estadísticas con las que se calcularon sus columnas.</p></div>
     <div><h4>Qué se filtró y qué quedó</h4>{{tabla_filtros}}
-      <p style="margin-top:10px">El modo de juego y el ranked se filtran en el pedido mismo a la API, así que el filtro de calidad del DAG no tuvo nada que descartar. Que dé cero también es un dato: las partidas ranked que devuelve la API vienen completas.</p></div>
+      <p style="margin-top:10px">{{filtro_texto}}</p></div>
     <div><h4>Columnas que no entran</h4><p><code>match_id</code> y <code>match_date</code> son identificadores; <code>game_mode</code> y <code>match_mode</code>, constantes. <code>average_badge_diff</code> sale porque no separa a ganadores de perdedores (H4), no por fuga. Las {{n_ventajas}} ventajas se midieron en la Entrega 3 y no entran al modelo final: dependen de las estadísticas de la API.</p></div>
   </div></details>
 </section>
@@ -342,9 +342,9 @@ footer p { margin: 0 0 6px; }
     <div><h4>El piso y la validación</h4><p>El piso dice siempre «gana {{piso_clase}}»: AUC 0,500. La validación imita el uso: se entrena con una fecha y se valida con la siguiente ({{pasos}} pasos), y el test es la fecha del {{fecha_test}} entera, mirada una sola vez. Partir al azar cambiaría el número apenas {{azar}}.</p></div>
     <div><h4>La comparación</h4>{{tabla_comparacion}}
       <p style="margin-top:10px">La composición empata con la mejor (la diferencia es menor que el desvío) y es la única del empate que no necesita las estadísticas de la API. Ningún modelo más complejo le gana.</p></div>
-    <div><h4>El ajuste y el test</h4><p>Multa l2, <code>C = {{c_elegido}}</code>, sin escalar: con <code>C</code> entre 0,01 y 10 el AUC va de {{c_min}} a {{c_max}}. En el test, AUC <strong>{{auc}}</strong> y accuracy <strong>{{acc}}</strong>. El modelo de la Entrega 3, con los winrates de la API, da {{auc_e3}} en el mismo corte.</p></div>
+    <div><h4>El ajuste y el test</h4><p>Multa l2, <code>C = {{c_elegido}}</code>, sin escalar: con <code>C</code> entre 0,01 y 10 el AUC va de {{c_min}} a {{c_max}}. En el test, AUC <strong>{{auc}}</strong> y accuracy <strong>{{acc}}</strong>. El modelo de septiembre, el de la Entrega 3 (entrenado con las partidas del {{fecha_sep}}, cuando el juego tenía 38 héroes), aplicado sin reentrenar a este mismo test da AUC <strong>{{auc_sep}}</strong> y acierta el {{acc_sep}}: por eso el modelo se reentrena con cada corte.</p></div>
     <div><h4>En qué se apoya</h4><p>En un peso por héroe. Los que más empujan son {{heroes_mas}}; los que más restan, {{heroes_menos}}. Los {{n_comp}} pesos correlacionan <strong>{{r}}</strong> con el winrate de la API: el modelo aprendió de las partidas lo mismo que las estadísticas.</p></div>
-    <div><h4>Qué cambió desde la Entrega 3</h4><p>Antes se elegía la logística con tres columnas de winrate de la API. Las dos empataban, y ahora se elige la de la composición porque predice con los 12 héroes y nada más.</p></div>
+    <div><h4>Qué cambió desde la Entrega 3</h4><p>El juego sumó {{n_nuevos}} héroes ({{nuevos_lista}}), que aparecen en el {{con_nuevo}} de estas partidas. El DAG ahora arma el catálogo de cada corte, y el modelo se reentrenó con las partidas del {{fecha_train}}: la misma configuración, con {{n_comp}} héroes en lugar de 38. Con el criterio de la Entrega 3 (el empate, y dentro del empate lo que no necesita las estadísticas de la API) se vuelve a elegir la composición; la comparación completa está en el notebook <code>entrega3_modelado_v4_heroes_nuevos</code>.</p></div>
   </div></details>
 </section>
 
@@ -386,7 +386,7 @@ footer p { margin: 0 0 6px; }
   <details class="como"><summary>Cómo calcula y qué no se puede cargar</summary><div class="cuerpo">
     <div><h4>La cuenta</h4><p>P(gana A) = σ(b + suma de los pesos de los héroes de A − suma de los pesos de los de B), con <code>b = {{b0}}</code> y los {{n_comp}} pesos que el modelo aprendió de las {{por_corte}} partidas del {{fecha_train}}. Es la misma cuenta que el notebook: las partidas reales que se cargan acá dan la misma probabilidad que allá.</p></div>
     <div><h4>Por qué la recomendación no mira al rival</h4><p>Cada héroe suma su peso sin importar contra quién juega, así que el orden de la recomendación es el mismo para los dos equipos. Lo probamos: agregarle al modelo un peso por cada cruce de héroes ({{n_cruces}} columnas) bajó el AUC de {{auc_cv_3}} a {{auc_cruces}}. Con {{por_corte}} partidas por fecha, los cruces no se pueden aprender.</p></div>
-    <div><h4>Qué no se puede cargar</h4><p>Solo los {{n_comp}} héroes que vio el modelo, cada uno una vez y seis por equipo. Los cinco héroes que Valve agregó después del 21/09 no aparecen: el modelo no tiene un peso para ellos.</p></div>
+    <div><h4>Qué no se puede cargar</h4><p>Solo los {{n_comp}} héroes del catálogo con el que se entrenó el modelo, cada uno una vez y seis por equipo; entre ellos están los {{n_nuevos}} que Valve agregó después de la Entrega 3. Un héroe que salga más adelante no aparece hasta que el DAG genere un corte nuevo y el modelo se reentrene: sin eso, no tiene un peso.</p></div>
   </div></details>
 </section>
 

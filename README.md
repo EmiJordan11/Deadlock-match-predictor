@@ -28,14 +28,23 @@ pip install -r notebooks/requirements.txt
 python app/build_app.py
 ```
 
-`build_app.py` lee los cortes de `include/output/silver/` y el bronce de
-partidas, entrena el modelo elegido en la Entrega 3 (logística sobre las 38
-columnas de composición, sin escalar, l2, `C = 0,1`, entrenada con el último
-corte de entrenamiento) con la semilla 42, vuelve a medir con el mismo
-walk-forward la tabla de comparación que muestra la app, y escribe
+`build_app.py` lee los cortes de `include/output/silver/catalogo_dinamico/`
+(cada uno con su catálogo de héroes; hoy, 44), entrena el modelo elegido
+(logística sobre las columnas de composición, sin escalar, l2, `C = 0,1`,
+entrenada con el último corte de entrenamiento) con la semilla 42, vuelve a
+medir con el mismo walk-forward la tabla de comparación que muestra la app,
+compara en el test contra el modelo de septiembre sin reentrenar, y escribe
 `docs/index.html`. Al final imprime los números y verifica que las
-predicciones coincidan con el `.joblib` que guardó el notebook. Si los datos
-cambian, correrlo de nuevo actualiza la aplicación. Tarda unos cinco minutos.
+predicciones coincidan con el modelo que guardó el notebook. Si los datos
+cambian, o aparece un héroe nuevo, correrlo de nuevo actualiza la
+aplicación. Tarda unos cinco minutos.
+
+**Un solo modelo, una sola ruta.** La app compara siempre contra
+`notebooks/modelo_entrega3_composicion.joblib`; lo que cambia es qué notebook
+lo escribe en cada rama. En `main` es el modelo de septiembre (notebook v3,
+38 héroes); en `feat/catalogo-dinamico-heroes`, el de noviembre (notebook
+`entrega3_modelado_v4_heroes_nuevos`, 44 héroes). En esta rama manda el v4:
+correr el v3 acá pisaría el modelo de noviembre con el de septiembre.
 
 | Archivo | Qué es |
 |---|---|
