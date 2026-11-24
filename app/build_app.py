@@ -289,6 +289,35 @@ if mejor_otro - auc_cv > sd_cv:
 azar = medir(elegido(), cv=StratifiedKFold(n_splits=5, shuffle=True, random_state=SEMILLA))[0] - auc_cv
 por_C = [medir(armar(LogisticRegression(max_iter=5000, C=c), COMP, escalar=False))[0] for c in (0.01, 0.1, 1, 10)]
 auc_cruces = medir(Pipeline([("elegir", Columnas(tuple(COMP))), ("cruces", Cruces()), ("modelo", LogisticRegression(max_iter=5000, C=C_CRUCES))]))[0]
+
+# ¿le suman las otras columnas? (notebook v4, sección 6): a la composición se le agrega cada bloque de ventajas.
+# Todo escalado y con la misma C, para que la comparación sea pareja. Se guarda el AUC de cada paso del walk-forward.
+print("· midiendo qué le suman las otras columnas a la composición")
+VENTAJAS = schema.COUNTER + schema.SYNERGY + schema.HERO_WINRATE
+SUMAS = [("Solo la composición", []),
+         ("+ los 3 winrates de la API", WINRATES),
+         ("+ la fuerza individual", schema.HERO_WINRATE),
+         ("+ los cruces y las parejas", [k for k in schema.COUNTER + schema.SYNERGY if k not in WINRATES]),
+         (f"+ las {len(VENTAJAS)} ventajas juntas", VENTAJAS)]
+FECHAS_VAL = [fecha(c) for c in sorted(g_train.unique())[VENTANA:]]
+filas_aporte = []
+for orden, (nombre, extra) in enumerate(SUMAS):
+    cols = list(dict.fromkeys(COMP + extra))
+    pasos = cross_validate(armar(LogisticRegression(max_iter=5000, C=C_ELEGIDO), cols), X_train, y_train,
+                           groups=g_train, cv=cv, scoring="roc_auc", n_jobs=-1)["test_score"]
+    for fe, a in zip(FECHAS_VAL, pasos):
+        filas_aporte.append({"bloque": nombre, "orden": orden, "columnas": len(cols), "fecha": fe, "auc": float(a)})
+aporte = pd.DataFrame(filas_aporte)
+aporte["etiqueta"] = aporte["bloque"] + "|" + aporte["columnas"].astype(str) + " columnas"
+resumen = (aporte.groupby(["etiqueta", "bloque", "orden", "columnas"])["auc"]
+           .agg(media="mean", desvio=lambda s: s.std(ddof=0)).reset_index().sort_values("orden"))
+base_aporte = resumen.iloc[0]
+resumen["delta"] = resumen["media"] - base_aporte["media"]
+resumen["delta_txt"] = ["referencia"] + [("+" if d >= 0 else "−") + num(abs(d), 4) for d in resumen["delta"].iloc[1:]]
+max_delta = float(resumen["delta"].iloc[1:].abs().max())
+rango_fechas = float(aporte.loc[aporte["orden"].eq(0), "auc"].agg(lambda s: s.max() - s.min()))
+if resumen["delta"].iloc[1:].max() > base_aporte["desvio"]:
+    avisos.append("algún bloque de ventajas le suma a la composición más que el desvío: revisar «¿Y las otras columnas?»")
 # la referencia que importa ahora: el modelo de septiembre (Entrega 3, 38 heroes), sin reentrenar
 e3 = pd.concat([pd.read_parquet(p).assign(corte=p.parent.name.split("=")[1])
                 for p in sorted(PLATA_E3.glob("corte=*/features.parquet"))], ignore_index=True)
@@ -404,6 +433,35 @@ spec_modelo = (
     + bq.mark_text(dy=-20, color=TEXT, font=FUENTE, fontSize=15, fontWeight=600).encode(y=y_q, text=alt.Text("pct:Q", format=".1f"))
 ).properties(width="container", height=320)
 
+# tallo 3 bis · ¿y las otras columnas?: la composición sola contra la composición con cada bloque de ventajas.
+# Una línea fina por fecha de validación: si sumar columnas aportara, se torcería hacia la derecha.
+x_lo = np.floor((aporte["auc"].min() - 0.002) * 200) / 200
+x_hi = np.ceil((aporte["auc"].max() + 0.002) * 200) / 200
+ES_A = ES(x_lo, x_hi)
+X_A = alt.X("auc:Q", title="ROC AUC en cada fecha de validación (walk-forward)", scale=ES_A, axis=alt.Axis(format=".3f", tickCount=5))
+Y_A = alt.Y("etiqueta:N", sort=alt.SortField("orden"), title=None,
+            axis=alt.Axis(labelExpr="split(datum.label, '|')", labelFontSize=14, labelLimit=220, labelPadding=10))
+franja = pd.DataFrame({"lo": [base_aporte["media"] - base_aporte["desvio"]], "hi": [base_aporte["media"] + base_aporte["desvio"]],
+                       "m": [base_aporte["media"]]})
+tt_a = [alt.Tooltip("bloque:N", title="Modelo"), alt.Tooltip("columnas:Q", title="Columnas"),
+        alt.Tooltip("media:Q", title="AUC medio", format=".4f"), alt.Tooltip("desvio:Q", title="Desvío", format=".4f"),
+        alt.Tooltip("delta_txt:N", title="Contra la composición sola")]
+spec_aporte = (
+    alt.Chart(franja).mark_rect(color=BRASS, opacity=0.13).encode(x=alt.X("lo:Q", scale=ES_A), x2="hi:Q")
+    + alt.Chart(franja).mark_rule(color=BRASS, strokeDash=[5, 5], opacity=0.8).encode(x=alt.X("m:Q", scale=ES_A))
+    + alt.Chart(aporte).mark_line(color=LINE, strokeWidth=1.5).encode(x=X_A, y=Y_A, detail="fecha:N", order="orden:Q")
+    + alt.Chart(aporte).mark_circle(size=70, color=MUTED, opacity=0.9).encode(
+        x=X_A, y=Y_A, tooltip=[alt.Tooltip("bloque:N", title="Modelo"), alt.Tooltip("fecha:N", title="Validado con el"),
+                               alt.Tooltip("auc:Q", title="AUC", format=".4f")])
+    + alt.Chart(aporte[aporte["orden"].eq(0)]).mark_text(dy=-16, color=MUTED, font=FUENTE, fontSize=12).encode(x=X_A, y=Y_A, text="fecha:N")
+    + alt.Chart(resumen).mark_point(shape="diamond", filled=True, size=260, opacity=1).encode(
+        x=alt.X("media:Q", scale=ES_A), y=Y_A, tooltip=tt_a,
+        color=alt.condition("datum.orden == 0", alt.value(BRASS), alt.value(TEXT)))
+    + alt.Chart(resumen).mark_text(dy=20, font=FUENTE, fontSize=13, fontWeight=600).encode(
+        x=alt.X("media:Q", scale=ES_A), y=Y_A, text="delta_txt:N",
+        color=alt.condition("datum.orden == 0", alt.value(BRASS), alt.value(TEXT)))
+).properties(width="container", height=330)
+
 # copa · explorá: un héroe por punto, filtrable por fecha y nivel de juego
 TRAMOS = ["hasta 40", "41 a 60", "61 a 80", "más de 80"]
 tramo = pd.cut(df["average_badge"], [-1, 40, 60, 80, 1000], labels=TRAMOS).astype(str)
@@ -497,7 +555,7 @@ def config(ch):
 
 
 SPECS = {k: config(v).to_dict() for k, v in {"g-datos": spec_datos, "g-hallazgo": spec_hallazgo, "g-modelo": spec_modelo,
-                                               "g-explora": spec_explora, "g-heroe": spec_heroe, "g-curva": spec_curva}.items()}
+                                               "g-aporte": spec_aporte, "g-explora": spec_explora, "g-heroe": spec_heroe, "g-curva": spec_curva}.items()}
 
 # =====================================================================================
 # 5. La página
@@ -567,6 +625,10 @@ VALORES = {
     "heroes_mas": f"{H.loc[mas.index[0], 'nombre']} ({num(mas.iloc[0])} puntos para su equipo) y {H.loc[mas.index[1], 'nombre']}".replace("(", "(+", 1),
     "heroes_menos": f"{H.loc[menos.index[0], 'nombre']} ({num(menos.iloc[0])}) y {H.loc[menos.index[1], 'nombre']}",
     "b0": num(b0, 3), "n_cruces": entero(len(COMP) * (len(COMP) - 1) // 2), "auc_cv_3": num(auc_cv, 3), "auc_cruces": num(auc_cruces, 3),
+    "max_delta": num(max_delta, 4), "rango_fechas": num(rango_fechas, 3), "d_todas": resumen["delta_txt"].iloc[-1],
+    "auc_comp_esc": num(base_aporte["media"], 4), "sd_comp_esc": num(base_aporte["desvio"], 4),
+    "n_val": NUMEROS.get(len(FECHAS_VAL), str(len(FECHAS_VAL))), "fechas_val": ", ".join(FECHAS_VAL[:-1]) + f" y {FECHAS_VAL[-1]}",
+    "veces": str(int(rango_fechas / max_delta)) if max_delta > 0 else "muchas",
     "generada": dt.date.today().strftime("%d/%m/%Y"),
 }
 DATOS = {"b0": b0, "heroes": heroes, "ejemplos": ejemplos, "fecha_test": fecha(CORTE_TEST), "fecha_train": FECHA_TRAIN}
@@ -597,6 +659,9 @@ print("walk-forward:")
 for n, (m, s, _) in comparacion.items():
     print(f"   {m:.4f} ± {s:.4f}  {n}")
 print(f"al azar {azar:+.4f} · C 0,01 a 10: {min(por_C):.4f}–{max(por_C):.4f} · con cruces {auc_cruces:.4f} · r con la API {r_api:.3f}")
+print("qué le suman las otras columnas a la composición (escalado, C = %g):" % C_ELEGIDO)
+for _, f_ in resumen.iterrows():
+    print(f"   {f_['media']:.4f} ± {f_['desvio']:.4f}  {f_['delta_txt']:>10}  {f_['bloque']} ({f_['columnas']})")
 print("coincide con el notebook:", "sí" if coincide is not None and coincide <= 1e-9 else f"NO ({coincide})")
 for a in avisos:
     print("AVISO:", a)
