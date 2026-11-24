@@ -164,6 +164,11 @@ tr.elegido td { color: var(--text); background: rgba(201, 164, 106, .08); }
 .ficha dt { font-family: var(--f-ui); font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--brass); }
 .ficha dd { margin: 0; color: var(--muted); font-size: 14px; }
 .ficha dd b { color: var(--text); font-family: var(--f-ui); font-size: 18px; font-weight: 600; }
+.detalle { margin-top: 18px; }
+.detalle-titulo { margin: 0 0 12px; color: var(--muted); font-size: 15px; max-width: 75ch; }
+.detalle-titulo b { font-family: var(--f-display); font-weight: 400; font-size: 24px; color: var(--text); margin-right: 8px; }
+.detalle-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
+@media (max-width: 960px) { .detalle-grid { grid-template-columns: minmax(0, 1fr); } }
 
 /* ---- draft ---- */
 .draft { padding: 22px; display: grid; gap: 18px; }
@@ -351,10 +356,18 @@ footer p { margin: 0 0 6px; }
 <section id="explora" class="copa-banda">
   <p class="ceja">Tu turno <i>◆</i> Explorá</p>
   <h2>Los {{n_comp}} héroes, según el modelo y según lo que pasó en las partidas</h2>
-  <p class="lead">Hacia la derecha, los héroes que el modelo ve más fuertes; hacia arriba, los que más ganaron. Filtrá por fecha y por nivel de juego, pasá el mouse por un héroe o tocalo para ver su ficha.</p>
+  <p class="lead">Hacia la derecha, los héroes que el modelo ve más fuertes; hacia arriba, los que más ganaron. Filtrá por fecha y por nivel de juego, pasá el mouse por un héroe o tocalo para ver su ficha y cómo le fue a lo largo del tiempo y según el nivel.</p>
   <div class="explora">
     <div class="marco grafico"><div id="g-explora" class="vis" role="img" aria-label="Los héroes según el modelo y según sus victorias"></div></div>
     <aside class="ficha marco" id="ficha" aria-live="polite"></aside>
+  </div>
+  <div class="detalle marco grafico">
+    <p class="detalle-titulo" id="detalle-titulo" aria-live="polite"></p>
+    <div class="detalle-grid">
+      <div id="g-heroe-tiempo" class="vis" role="img" aria-label="Victorias del equipo del héroe elegido en cada fecha"></div>
+      <div id="g-heroe-nivel" class="vis" role="img" aria-label="Victorias del equipo del héroe elegido según el nivel de juego"></div>
+    </div>
+    <p class="mirar"><strong>Qué mirar.</strong> Los rombos son cuánto ganó el equipo del héroe, con su intervalo de 95 %; la línea punteada clara es lo que el modelo le suma con dos equipos parejos. Si los rombos se mantienen cerca de esa línea, el peso del modelo describe bien al héroe; si suben o bajan con la fecha o con el nivel, el peso es un promedio que esconde esa diferencia. Los menús de arriba también filtran estos gráficos: el de nivel, el panel de fechas; el de fecha, el de niveles.</p>
   </div>
 </section>
 
@@ -529,11 +542,26 @@ document.getElementById("b-cargar").addEventListener("click", () => {
   siguienteEjemplo++;
 });
 
+/* explorá: tocar un héroe cambia su ficha, su anillo en el gráfico y los dos paneles de detalle */
+function verHeroe(slug) {
+  const h = HER[slug];
+  ficha(slug);
+  document.getElementById("detalle-titulo").innerHTML =
+    `<b>${h.nombre}</b> Cómo le fue a su equipo en cada fecha y en cada nivel. Según el modelo, le suma ${signo(h.pts)} pts: con dos equipos parejos, su equipo ganaría el ${fmt(50 + h.pts)} %.`;
+  listos.then(() => {
+    if (vistas["g-explora"]) vistas["g-explora"].signal("elegido", slug).runAsync();
+    ["g-heroe-tiempo", "g-heroe-nivel"].forEach(id => { if (vistas[id]) vistas[id].signal("heroe", slug).runAsync(); });
+  });
+}
 cargarEjemplo(DATOS.ejemplos[0], 5);
-ficha(DATOS.heroes.reduce((a, b) => (b.pts > a.pts ? b : a)).slug);
+verHeroe(DATOS.heroes.reduce((a, b) => (b.pts > a.pts ? b : a)).slug);
 listos.then(() => {
   const v = vistas["g-explora"];
-  if (v) v.addEventListener("click", (e, item) => { if (item && item.datum && item.datum.slug) ficha(item.datum.slug); });
+  if (!v) return;
+  v.addEventListener("click", (e, item) => { if (item && item.datum && item.datum.slug) verHeroe(item.datum.slug); });
+  // los menús del gráfico de los héroes también filtran los paneles: el nivel, el de fechas; la fecha, el de niveles
+  v.addSignalListener("nivel", (n, valor) => { if (vistas["g-heroe-tiempo"]) vistas["g-heroe-tiempo"].signal("nivel", valor).runAsync(); });
+  v.addSignalListener("fecha", (n, valor) => { if (vistas["g-heroe-nivel"]) vistas["g-heroe-nivel"].signal("fecha", valor).runAsync(); });
 });
 
 /* el riel marca la sección que se está leyendo */

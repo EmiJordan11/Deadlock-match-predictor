@@ -429,12 +429,54 @@ agregado = (alt.Chart(largo)
 tt = [alt.Tooltip("nombre:N", title="Héroe"), alt.Tooltip("pts:Q", title="Según el modelo (pts)", format="+.1f"),
       alt.Tooltip("wr:Q", title="Ganó su equipo (%)", format=".1f"), alt.Tooltip("n:Q", title="Partidas", format=",.0f"),
       alt.Tooltip("api:Q", title="Winrate API, 14 días (%)", format=".1f")]
+HEROE_INICIAL = H["pts"].idxmax()                 # el que más le suma a su equipo: el primero que se ve
+# `elegido` es el héroe que se tocó: lo pone la página al hacer clic (no tiene control propio)
+elegido_p = alt.param(name="elegido", value=HEROE_INICIAL)
 spec_explora = (
     alt.Chart(pd.DataFrame({"y": [50]})).mark_rule(color=LINE, strokeDash=[4, 4]).encode(y=alt.Y("y:Q", scale=ES(38, 62)))
     + alt.Chart(pd.DataFrame({"x": [0]})).mark_rule(color=LINE, strokeDash=[4, 4]).encode(x=alt.X("x:Q", scale=ES(-7.5, 8.5)))
     + agregado.mark_circle(size=1500, opacity=1, stroke=BRASS, strokeWidth=1.5, fill=FONDO).encode(x=X_E, y=Y_E, tooltip=tt)
+    # el héroe elegido lleva un anillo más grande y claro
+    + agregado.transform_filter("datum.slug == elegido").mark_circle(size=2600, fillOpacity=0, stroke=TEXT, strokeWidth=3).encode(x=X_E, y=Y_E)
     + agregado.mark_image(width=34, height=34, cursor="pointer").encode(x=X_E, y=Y_E, url="img:N", tooltip=tt)
-).add_params(fecha_p, nivel_p).properties(width="container", height=460)
+).add_params(fecha_p, nivel_p, elegido_p).properties(width="container", height=460)
+
+
+def detalle_heroe(eje: str, orden: list[str], titulo: str):
+    """Cómo le fue al equipo del héroe elegido, por fecha o por nivel de juego, contra lo que le suma el modelo.
+
+    `heroe` lo pone la página al hacer clic en el gráfico de los héroes. El otro filtro también lo copia la
+    página de los menús de ese gráfico: el menú de nivel filtra el panel de fechas, y el de fecha, el de niveles.
+    """
+    otro, todos = ("nivel", "Todos") if eje == "fecha" else ("fecha", "Todas")
+    y_sc = ES(30, 70, clamp=True)
+    base = (alt.Chart(largo)
+            .transform_filter("datum.slug == heroe")
+            .transform_filter(f"datum.{eje} != 'nan'")
+            .transform_filter(f"{otro} == '{todos}' || datum.{otro} == {otro}")
+            .transform_aggregate(g="sum(g)", n="sum(n)", groupby=[eje, "pts"])
+            .transform_calculate(wr="100 * datum.g / datum.n",
+                                 ic="196 * sqrt((datum.g / datum.n) * (1 - datum.g / datum.n) / datum.n)",
+                                 lo="datum.wr - datum.ic", hi="datum.wr + datum.ic", modelo="50 + datum.pts"))
+    X = alt.X(f"{eje}:O", sort=orden, title=None, axis=alt.Axis(labelAngle=0, labelFontSize=13))
+    Y = alt.Y("wr:Q", title="% de partidas que ganó su equipo", scale=y_sc)
+    capas = (
+        mitad(30, 70)
+        + base.mark_rule(color=TEXT, strokeDash=[2, 4], strokeWidth=2, opacity=0.8).encode(y=alt.Y("modelo:Q", scale=y_sc))
+        + base.mark_rule(color=BRASS, strokeWidth=2, opacity=0.6).encode(x=X, y=alt.Y("lo:Q", scale=y_sc), y2="hi:Q")
+        + base.mark_line(color=MUTED, strokeWidth=2).encode(x=X, y=Y)
+        + base.mark_point(shape="diamond", filled=True, size=170, color=BRASS, opacity=1).encode(
+            x=X, y=Y, tooltip=[alt.Tooltip(f"{eje}:N", title="Fecha" if eje == "fecha" else "Nivel"),
+                               alt.Tooltip("wr:Q", title="Ganó su equipo (%)", format=".1f"),
+                               alt.Tooltip("n:Q", title="Partidas", format=",.0f")])
+        + base.mark_text(dy=-16, color=TEXT, font=FUENTE, fontSize=12).encode(x=X, y=Y, text=alt.Text("wr:Q", format=".0f"))
+    )
+    return capas.add_params(alt.param(name="heroe", value=HEROE_INICIAL), alt.param(name=otro, value=todos)).properties(
+        width="container", height=250, title=alt.Title(titulo, anchor="start", color=MUTED, font=FUENTE, fontSize=14, fontWeight="normal"))
+
+
+spec_heroe_tiempo = detalle_heroe("fecha", [fecha(c) for c in CORTES], "A lo largo del tiempo (fecha de corte)")
+spec_heroe_nivel = detalle_heroe("nivel", TRAMOS, "Según el nivel de juego (badge promedio de la partida)")
 
 # copa · el draft: la probabilidad pick a pick (los datos los pone la página)
 curva = alt.Chart(alt.NamedData(name="curva"))
@@ -458,7 +500,8 @@ def config(ch):
 
 
 SPECS = {k: config(v).to_dict() for k, v in {"g-datos": spec_datos, "g-hallazgo": spec_hallazgo, "g-modelo": spec_modelo,
-                                               "g-explora": spec_explora, "g-curva": spec_curva}.items()}
+                                               "g-explora": spec_explora, "g-heroe-tiempo": spec_heroe_tiempo,
+                                               "g-heroe-nivel": spec_heroe_nivel, "g-curva": spec_curva}.items()}
 
 # =====================================================================================
 # 5. La página
