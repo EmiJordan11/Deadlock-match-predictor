@@ -442,41 +442,38 @@ spec_explora = (
 ).add_params(fecha_p, nivel_p, elegido_p).properties(width="container", height=460)
 
 
-def detalle_heroe(eje: str, orden: list[str], titulo: str):
-    """Cómo le fue al equipo del héroe elegido, por fecha o por nivel de juego, contra lo que le suma el modelo.
-
-    `heroe` lo pone la página al hacer clic en el gráfico de los héroes. El otro filtro también lo copia la
-    página de los menús de ese gráfico: el menú de nivel filtra el panel de fechas, y el de fecha, el de niveles.
-    """
-    otro, todos = ("nivel", "Todos") if eje == "fecha" else ("fecha", "Todas")
-    y_sc = ES(30, 70, clamp=True)
-    base = (alt.Chart(largo)
-            .transform_filter("datum.slug == heroe")
-            .transform_filter(f"datum.{eje} != 'nan'")
-            .transform_filter(f"{otro} == '{todos}' || datum.{otro} == {otro}")
-            .transform_aggregate(g="sum(g)", n="sum(n)", groupby=[eje, "pts"])
-            .transform_calculate(wr="100 * datum.g / datum.n",
-                                 ic="196 * sqrt((datum.g / datum.n) * (1 - datum.g / datum.n) / datum.n)",
-                                 lo="datum.wr - datum.ic", hi="datum.wr + datum.ic", modelo="50 + datum.pts"))
-    X = alt.X(f"{eje}:O", sort=orden, title=None, axis=alt.Axis(labelAngle=0, labelFontSize=13))
-    Y = alt.Y("wr:Q", title="% de partidas que ganó su equipo", scale=y_sc)
-    capas = (
-        mitad(30, 70)
-        + base.mark_rule(color=TEXT, strokeDash=[2, 4], strokeWidth=2, opacity=0.8).encode(y=alt.Y("modelo:Q", scale=y_sc))
-        + base.mark_rule(color=BRASS, strokeWidth=2, opacity=0.6).encode(x=X, y=alt.Y("lo:Q", scale=y_sc), y2="hi:Q")
-        + base.mark_line(color=MUTED, strokeWidth=2).encode(x=X, y=Y)
-        + base.mark_point(shape="diamond", filled=True, size=170, color=BRASS, opacity=1).encode(
-            x=X, y=Y, tooltip=[alt.Tooltip(f"{eje}:N", title="Fecha" if eje == "fecha" else "Nivel"),
-                               alt.Tooltip("wr:Q", title="Ganó su equipo (%)", format=".1f"),
+# el mismo recuadro, mutado: al tocar un héroe, la página cambia el gráfico de los 44 por el de ese héroe.
+# Un selector (`eje`) cambia el eje x entre las fechas de corte y los tramos de nivel. `heroe` lo pone la
+# página al hacer clic; `nivel_f` y `fecha_f` los copia de los menús del gráfico de los 44: si se miraba un
+# nivel, el eje de fechas muestra ese nivel, y si se miraba una fecha, el eje de niveles muestra esa fecha.
+FECHAS = [fecha(c) for c in CORTES]
+lista_js = lambda xs: "[" + ", ".join(f"'{x}'" for x in xs) + "]"
+eje_p = alt.param(name="eje", value="fecha", bind=alt.binding_radio(
+    options=["fecha", "nivel"], labels=["a lo largo del tiempo", "según el nivel de juego"], name="Ver "))
+y_h = ES(30, 70, clamp=True)
+base_h = (alt.Chart(largo)
+          .transform_filter("datum.slug == heroe && datum.nivel != 'nan'")
+          .transform_filter("eje == 'fecha' ? (nivel_f == 'Todos' || datum.nivel == nivel_f) : (fecha_f == 'Todas' || datum.fecha == fecha_f)")
+          .transform_calculate(x="eje == 'fecha' ? datum.fecha : datum.nivel",
+                               orden=f"eje == 'fecha' ? indexof({lista_js(FECHAS)}, datum.fecha) : indexof({lista_js(TRAMOS)}, datum.nivel)")
+          .transform_aggregate(g="sum(g)", n="sum(n)", groupby=["x", "orden", "pts"])
+          .transform_calculate(wr="100 * datum.g / datum.n",
+                               ic="196 * sqrt((datum.g / datum.n) * (1 - datum.g / datum.n) / datum.n)",
+                               lo="datum.wr - datum.ic", hi="datum.wr + datum.ic", modelo="50 + datum.pts"))
+X_H = alt.X("x:O", sort=alt.EncodingSortField(field="orden", op="min"), title=None, axis=alt.Axis(labelAngle=0, labelFontSize=14))
+Y_H = alt.Y("wr:Q", title="% de partidas que ganó su equipo", scale=y_h)
+spec_heroe = (
+    mitad(30, 70)
+    + base_h.mark_rule(color=TEXT, strokeDash=[2, 4], strokeWidth=2, opacity=0.8).encode(y=alt.Y("modelo:Q", scale=y_h))
+    + base_h.mark_rule(color=BRASS, strokeWidth=2, opacity=0.6).encode(x=X_H, y=alt.Y("lo:Q", scale=y_h), y2="hi:Q")
+    + base_h.mark_line(color=MUTED, strokeWidth=2).encode(x=X_H, y=Y_H)
+    + base_h.mark_point(shape="diamond", filled=True, size=200, color=BRASS, opacity=1).encode(
+        x=X_H, y=Y_H, tooltip=[alt.Tooltip("x:N", title="Fecha o nivel"), alt.Tooltip("wr:Q", title="Ganó su equipo (%)", format=".1f"),
+                               alt.Tooltip("lo:Q", title="Desde (IC 95 %)", format=".1f"), alt.Tooltip("hi:Q", title="Hasta (IC 95 %)", format=".1f"),
                                alt.Tooltip("n:Q", title="Partidas", format=",.0f")])
-        + base.mark_text(dy=-16, color=TEXT, font=FUENTE, fontSize=12).encode(x=X, y=Y, text=alt.Text("wr:Q", format=".0f"))
-    )
-    return capas.add_params(alt.param(name="heroe", value=HEROE_INICIAL), alt.param(name=otro, value=todos)).properties(
-        width="container", height=250, title=alt.Title(titulo, anchor="start", color=MUTED, font=FUENTE, fontSize=14, fontWeight="normal"))
-
-
-spec_heroe_tiempo = detalle_heroe("fecha", [fecha(c) for c in CORTES], "A lo largo del tiempo (fecha de corte)")
-spec_heroe_nivel = detalle_heroe("nivel", TRAMOS, "Según el nivel de juego (badge promedio de la partida)")
+    + base_h.mark_text(dy=-18, color=TEXT, font=FUENTE, fontSize=13).encode(x=X_H, y=Y_H, text=alt.Text("wr:Q", format=".0f"))
+).add_params(eje_p, alt.param(name="heroe", value=HEROE_INICIAL), alt.param(name="nivel_f", value="Todos"),
+             alt.param(name="fecha_f", value="Todas")).properties(width="container", height=420)
 
 # copa · el draft: la probabilidad pick a pick (los datos los pone la página)
 curva = alt.Chart(alt.NamedData(name="curva"))
@@ -500,8 +497,7 @@ def config(ch):
 
 
 SPECS = {k: config(v).to_dict() for k, v in {"g-datos": spec_datos, "g-hallazgo": spec_hallazgo, "g-modelo": spec_modelo,
-                                               "g-explora": spec_explora, "g-heroe-tiempo": spec_heroe_tiempo,
-                                               "g-heroe-nivel": spec_heroe_nivel, "g-curva": spec_curva}.items()}
+                                               "g-explora": spec_explora, "g-heroe": spec_heroe, "g-curva": spec_curva}.items()}
 
 # =====================================================================================
 # 5. La página
