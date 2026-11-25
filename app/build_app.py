@@ -328,6 +328,15 @@ modelo_sep = armar(LogisticRegression(max_iter=5000, C=C_ELEGIDO), schema.COMPOS
 p_sep = modelo_sep.predict_proba(X_test)[:, 1]
 auc_sep, acc_sep = roc_auc_score(y_test, p_sep), accuracy_score(y_test, p_sep >= 0.5)
 FECHA_SEP = fecha(cortes_e3[-2])
+# para el cierre: cuánto de lo que el modelo le saca al azar se pierde si no se reentrena
+perdida_sep = (auc_test - auc_sep) / (auc_test - 0.5)
+if perdida_sep <= 0:
+    avisos.append("el modelo de septiembre no pierde contra el reentrenado: revisar la tercera pregunta del cierre")
+# y en cuántas partidas de entrenamiento aparece cada cruce de héroes (i en un equipo, j en el otro)
+_comp = X_final[COMP].to_numpy()
+_cruce = (_comp == 1).astype(int).T @ (_comp == -1).astype(int)
+_cruce = _cruce + _cruce.T
+por_cruce = int(np.median(_cruce[np.triu_indices(len(COMP), 1)]))
 
 # =====================================================================================
 # 3. Los héroes
@@ -629,6 +638,7 @@ VALORES = {
     "auc_comp_esc": num(base_aporte["media"], 4), "sd_comp_esc": num(base_aporte["desvio"], 4),
     "n_val": NUMEROS.get(len(FECHAS_VAL), str(len(FECHAS_VAL))), "fechas_val": ", ".join(FECHAS_VAL[:-1]) + f" y {FECHAS_VAL[-1]}",
     "veces": str(int(rango_fechas / max_delta)) if max_delta > 0 else "muchas",
+    "error": pct(1 - acc_test, 0), "perdida_sep": pct(perdida_sep, 0), "por_cruce": entero(por_cruce), "n_train": entero(len(X_final)),
     "generada": dt.date.today().strftime("%d/%m/%Y"),
 }
 DATOS = {"b0": b0, "heroes": heroes, "ejemplos": ejemplos, "fecha_test": fecha(CORTE_TEST), "fecha_train": FECHA_TRAIN}
@@ -662,6 +672,8 @@ print(f"al azar {azar:+.4f} · C 0,01 a 10: {min(por_C):.4f}–{max(por_C):.4f} 
 print("qué le suman las otras columnas a la composición (escalado, C = %g):" % C_ELEGIDO)
 for _, f_ in resumen.iterrows():
     print(f"   {f_['media']:.4f} ± {f_['desvio']:.4f}  {f_['delta_txt']:>10}  {f_['bloque']} ({f_['columnas']})")
+print(f"cierre: se equivoca en {1 - acc_test:.1%} · septiembre pierde {perdida_sep:.0%} de lo que le saca al azar · "
+      f"cada cruce aparece en {por_cruce} partidas de entrenamiento (mediana)")
 print("coincide con el notebook:", "sí" if coincide is not None and coincide <= 1e-9 else f"NO ({coincide})")
 for a in avisos:
     print("AVISO:", a)

@@ -84,6 +84,16 @@ h3 { font-family: var(--f-ui); font-weight: 600; font-size: 14px; letter-spacing
 .mirar strong { color: var(--text); font-weight: 600; }
 .sub-bloque { margin-top: 56px; }
 .sub-bloque h3 { font-size: 15px; }
+.abiertas { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; }
+.abierta { padding: 22px 20px 20px; display: flex; flex-direction: column; gap: 12px; }
+.abierta p { margin: 0; color: var(--muted); font-size: 15px; }
+.abierta p strong { color: var(--text); font-weight: 600; }
+.abierta .abierta-n { font-family: var(--f-ui); font-weight: 600; font-size: 12px; letter-spacing: .2em; text-transform: uppercase; color: var(--brass); }
+.abierta h3 { font-family: var(--f-display); font-weight: 400; font-size: 22px; letter-spacing: 0; text-transform: none; color: var(--text); margin: 0; line-height: 1.2; }
+.abierta .abierta-dato { font-size: 14px; }
+.abierta .abierta-dato b { display: block; font-family: var(--f-display); font-weight: 400; font-size: 30px; line-height: 1.1; color: var(--text); margin-bottom: 4px; font-variant-numeric: tabular-nums; }
+.abierta .abierta-falta { margin-top: auto; padding-top: 12px; border-top: 1px solid var(--line); font-size: 14px; }
+.abierta .abierta-falta strong { display: block; font-family: var(--f-ui); font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--brass); margin-bottom: 4px; }
 
 /* marco art déco: borde fino y cuatro esquinas de latón */
 .marco { position: relative; background: var(--panel); border: 1px solid var(--line); }
@@ -279,6 +289,8 @@ footer p { margin: 0 0 6px; }
     <li><a href="#explora">Explorá los héroes</a></li>
     <li><a href="#draft">Armá el draft</a></li></ol>
     <p class="nota-copa">La historia se lee en orden. Acá las preguntas las hacés vos.</p></div>
+  <div><h3>Cierre</h3><ol>
+    <li><a href="#cierre">Lo que no sabemos</a></li></ol></div>
 </nav>
 
 <main>
@@ -412,6 +424,36 @@ footer p { margin: 0 0 6px; }
     <div><h4>Por qué la recomendación no mira al rival</h4><p>Cada héroe suma su peso sin importar contra quién juega, así que el orden de la recomendación es el mismo para los dos equipos. Lo probamos: agregarle al modelo un peso por cada cruce de héroes ({{n_cruces}} columnas) bajó el AUC de {{auc_cv_3}} a {{auc_cruces}}. Con {{por_corte}} partidas por fecha, los cruces no se pueden aprender.</p></div>
     <div><h4>Qué no se puede cargar</h4><p>Solo los {{n_comp}} héroes del catálogo con el que se entrenó el modelo, cada uno una vez y seis por equipo; entre ellos están los {{n_nuevos}} que Valve agregó después de la Entrega 3. Un héroe que salga más adelante no aparece hasta que el DAG genere un corte nuevo y el modelo se reentrene: sin eso, no tiene un peso.</p></div>
   </div></details>
+</section>
+
+<section id="cierre" class="seccion">
+  <p class="ceja">Cierre <i>◆</i> Lo que no sabemos</p>
+  <h2>La composición inclina la balanza, pero no decide la partida, y deja tres preguntas abiertas</h2>
+  <p class="lead">Sabiendo solo los 12 héroes, el modelo acierta el {{acc}} de las partidas que no vio. Es más que una moneda, pero deja afuera mucho de lo que pasa en una partida. Estas son las tres preguntas que el proyecto no responde, y qué haría falta para responderlas.</p>
+  <div class="abiertas">
+    <article class="abierta marco">
+      <p class="abierta-n">Pregunta 1</p>
+      <h3>¿Qué decide el otro {{error}}?</h3>
+      <p class="abierta-dato"><b>{{low}}</b>de aciertos en las partidas más parejas: lo mismo que una moneda</p>
+      <p>Cuando la composición está pareja, el resultado lo decide algo más: cómo juega cada uno, cuánto domina su héroe, los ítems, las decisiones durante la partida. Lo dejamos afuera <strong>a propósito</strong>: la pregunta del proyecto es cuánto se puede saber <em>solo</em> con la composición, antes de que empiece la partida.</p>
+      <p class="abierta-falta"><strong>Para responderla</strong>Sumar datos de cada jugador (su rango, sus partidas con el héroe) y medir cuánto agregan sobre la composición. Sería otra pregunta: ya no alcanzaría con mirar el draft.</p>
+    </article>
+    <article class="abierta marco">
+      <p class="abierta-n">Pregunta 2</p>
+      <h3>¿Existen los counters?</h3>
+      <p class="abierta-dato"><b>{{auc_cv_3}} → {{auc_cruces}}</b>de AUC al sumarle al modelo los {{n_cruces}} cruces entre héroes</p>
+      <p>Por eso el modelo no mira al rival y la recomendación del draft es la misma para los dos equipos. Que los cruces empeoren el modelo no prueba que los counters no existan: cada cruce aparece en unas {{por_cruce}} de las {{n_train}} partidas de entrenamiento, y con eso su efecto no se distingue del ruido.</p>
+      <p class="abierta-falta"><strong>Para responderla</strong>Entrenar con muchos más cortes juntos (el DAG ya los genera) o agrupar a los héroes por rol para tener menos cruces, y volver a medir.</p>
+    </article>
+    <article class="abierta marco">
+      <p class="abierta-n">Pregunta 3</p>
+      <h3>¿Cada cuánto envejece el modelo?</h3>
+      <p class="abierta-dato"><b>{{auc}} → {{auc_sep}}</b>de AUC en las partidas del {{fecha_test}}: el modelo de noviembre, y el de septiembre sin reentrenar</p>
+      <p>Sin reentrenar, el modelo de septiembre pierde el {{perdida_sep}} de lo que le saca al azar: los parches cambian el meta, y un héroe nuevo no tiene peso hasta que el modelo se reentrena. Sabemos que hay que reentrenar, pero no cada cuánto conviene.</p>
+      <p class="abierta-falta"><strong>Para responderla</strong>Generar cortes con el DAG a intervalos regulares, dejar fijo un modelo y medir cómo cae su AUC con los días y con cada parche.</p>
+    </article>
+  </div>
+  <p class="mirar"><strong>Una advertencia para toda la app.</strong> Los pesos del modelo son asociación, no causa. Que un héroe le sume puntos a su equipo puede deberse a que lo eligen jugadores que ya ganan más. La recomendación del draft dice qué héroes se asociaron con ganar, no qué héroe te hace ganar.</p>
 </section>
 
 <footer>
