@@ -82,6 +82,18 @@ h3 { font-family: var(--f-ui); font-weight: 600; font-size: 14px; letter-spacing
 .lead { color: var(--muted); font-size: 17px; max-width: 65ch; margin: 0 0 26px; }
 .mirar { color: var(--muted); max-width: 65ch; margin: 16px 0 0; font-size: 15px; }
 .mirar strong { color: var(--text); font-weight: 600; }
+.sub-bloque { margin-top: 56px; }
+.sub-bloque h3 { font-size: 15px; }
+.abiertas { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; }
+.abierta { padding: 22px 20px 20px; display: flex; flex-direction: column; gap: 12px; }
+.abierta p { margin: 0; color: var(--muted); font-size: 15px; }
+.abierta p strong { color: var(--text); font-weight: 600; }
+.abierta .abierta-n { font-family: var(--f-ui); font-weight: 600; font-size: 12px; letter-spacing: .2em; text-transform: uppercase; color: var(--brass); }
+.abierta h3 { font-family: var(--f-display); font-weight: 400; font-size: 22px; letter-spacing: 0; text-transform: none; color: var(--text); margin: 0; line-height: 1.2; }
+.abierta .abierta-dato { font-size: 14px; }
+.abierta .abierta-dato b { display: block; font-family: var(--f-display); font-weight: 400; font-size: 30px; line-height: 1.1; color: var(--text); margin-bottom: 4px; font-variant-numeric: tabular-nums; }
+.abierta .abierta-falta { margin-top: auto; padding-top: 12px; border-top: 1px solid var(--line); font-size: 14px; }
+.abierta .abierta-falta strong { display: block; font-family: var(--f-ui); font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--brass); margin-bottom: 4px; }
 
 /* marco art déco: borde fino y cuatro esquinas de latón */
 .marco { position: relative; background: var(--panel); border: 1px solid var(--line); }
@@ -164,6 +176,11 @@ tr.elegido td { color: var(--text); background: rgba(201, 164, 106, .08); }
 .ficha dt { font-family: var(--f-ui); font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--brass); }
 .ficha dd { margin: 0; color: var(--muted); font-size: 14px; }
 .ficha dd b { color: var(--text); font-family: var(--f-ui); font-size: 18px; font-weight: 600; }
+.explora-cabeza { display: grid; gap: 10px; margin-bottom: 8px; justify-items: start; }
+.detalle-titulo { margin: 0; color: var(--muted); font-size: 15px; max-width: 75ch; }
+.detalle-titulo b { font-family: var(--f-display); font-weight: 400; font-size: 24px; color: var(--text); margin-right: 8px; }
+.vis .vega-bind-radio { display: flex; gap: 6px 14px; flex-wrap: wrap; align-items: center; color: var(--text); }
+.vis .vega-bind-radio input { accent-color: var(--brass); }
 
 /* ---- draft ---- */
 .draft { padding: 22px; display: grid; gap: 18px; }
@@ -272,6 +289,8 @@ footer p { margin: 0 0 6px; }
     <li><a href="#explora">Explorá los héroes</a></li>
     <li><a href="#draft">Armá el draft</a></li></ol>
     <p class="nota-copa">La historia se lee en orden. Acá las preguntas las hacés vos.</p></div>
+  <div><h3>Cierre</h3><ol>
+    <li><a href="#cierre">Lo que no sabemos</a></li></ol></div>
 </nav>
 
 <main>
@@ -337,11 +356,20 @@ footer p { margin: 0 0 6px; }
   <p class="lead">Una regresión logística con un peso por héroe: aprende de los resultados cuánto inclina la balanza cada uno, sin mirar ninguna estadística externa.</p>
   <div class="marco grafico"><div id="g-modelo" class="vis" role="img" aria-label="Aciertos del modelo según qué tan despareja es la composición"></div></div>
   <p class="mirar"><strong>Qué mirar.</strong> Cada palo sale del piso. En las partidas más parejas el modelo acierta {{low}}, una moneda; a medida que la composición se desequilibra, acierta más. El modelo sabe cuándo no sabe.</p>
+
+  <div class="sub-bloque">
+    <h3>¿Y las otras {{n_ventajas}} columnas? No suman nada</h3>
+    <p class="lead">Además de los héroes, el dataset trae {{n_ventajas}} columnas calculadas con las estadísticas de la API: los winrates, los cruces, las parejas y la fuerza individual de cada héroe. Se las sumamos a la composición, de a un bloque y todas juntas, y medimos cada modelo con la misma validación.</p>
+    <div class="marco grafico"><div id="g-aporte" class="vis" role="img" aria-label="AUC de la composición sola y de la composición con cada bloque de columnas, en cada fecha de validación"></div></div>
+    <p class="mirar"><strong>Qué mirar.</strong> Los rombos, el AUC medio de cada modelo, quedan todos sobre la línea punteada de la composición sola y dentro de su franja: el que más se aleja cambia {{max_delta}}, y para abajo. Los puntos chicos son cada fecha de validación, unidos por una línea fina. Se mueven unas milésimas para un lado o para el otro, sin correrse a la derecha, y lo que de verdad los separa es la fecha, hasta {{rango_fechas}}: {{veces}} veces más que lo que cambian las columnas. Si las otras columnas no aportan y además necesitan las estadísticas de la API, el modelo se queda con los 12 héroes.</p>
+  </div>
+
   <details class="como"><summary>Cómo lo sabemos</summary><div class="cuerpo">
     <div><h4>La métrica</h4><p><strong>ROC AUC</strong>, con la accuracy al lado. La app muestra una probabilidad, y el AUC mide si el modelo ordena bien las partidas usando la probabilidad entera. A y B son etiquetas simétricas: errar para un lado cuesta lo mismo que para el otro.</p></div>
     <div><h4>El piso y la validación</h4><p>El piso dice siempre «gana {{piso_clase}}»: AUC 0,500. La validación imita el uso: se entrena con una fecha y se valida con la siguiente ({{pasos}} pasos), y el test es la fecha del {{fecha_test}} entera, mirada una sola vez. Partir al azar cambiaría el número apenas {{azar}}.</p></div>
     <div><h4>La comparación</h4>{{tabla_comparacion}}
       <p style="margin-top:10px">La composición empata con la mejor (la diferencia es menor que el desvío) y es la única del empate que no necesita las estadísticas de la API. Ningún modelo más complejo le gana.</p></div>
+    <div><h4>Cómo se midió lo que suman las otras columnas</h4><p>Es la sección 6 del notebook <code>entrega3_modelado_v4_heroes_nuevos</code>. La misma logística (multa l2, <code>C = {{c_elegido}}</code>), con todas las columnas escaladas para que la comparación sea pareja, validada en las {{n_val}} fechas del walk-forward ({{fechas_val}}). La composición sola, escalada, da AUC {{auc_comp_esc}} ± {{sd_comp_esc}}: esa es la franja del gráfico. El número debajo de cada rombo es la diferencia de AUC medio con la composición sola.</p></div>
     <div><h4>El ajuste y el test</h4><p>Multa l2, <code>C = {{c_elegido}}</code>, sin escalar: con <code>C</code> entre 0,01 y 10 el AUC va de {{c_min}} a {{c_max}}. En el test, AUC <strong>{{auc}}</strong> y accuracy <strong>{{acc}}</strong>. El modelo de septiembre, el de la Entrega 3 (entrenado con las partidas del {{fecha_sep}}, cuando el juego tenía 38 héroes), aplicado sin reentrenar a este mismo test da AUC <strong>{{auc_sep}}</strong> y acierta el {{acc_sep}}: por eso el modelo se reentrena con cada corte.</p></div>
     <div><h4>En qué se apoya</h4><p>En un peso por héroe. Los que más empujan son {{heroes_mas}}; los que más restan, {{heroes_menos}}. Los {{n_comp}} pesos correlacionan <strong>{{r}}</strong> con el winrate de la API: el modelo aprendió de las partidas lo mismo que las estadísticas.</p></div>
     <div><h4>Qué cambió desde la Entrega 3</h4><p>El juego sumó {{n_nuevos}} héroes ({{nuevos_lista}}), que aparecen en el {{con_nuevo}} de estas partidas. El DAG ahora arma el catálogo de cada corte, y el modelo se reentrenó con las partidas del {{fecha_train}}: la misma configuración, con {{n_comp}} héroes en lugar de 38. Con el criterio de la Entrega 3 (el empate, y dentro del empate lo que no necesita las estadísticas de la API) se vuelve a elegir la composición; la comparación completa está en el notebook <code>entrega3_modelado_v4_heroes_nuevos</code>.</p></div>
@@ -351,11 +379,19 @@ footer p { margin: 0 0 6px; }
 <section id="explora" class="copa-banda">
   <p class="ceja">Tu turno <i>◆</i> Explorá</p>
   <h2>Los {{n_comp}} héroes, según el modelo y según lo que pasó en las partidas</h2>
-  <p class="lead">Hacia la derecha, los héroes que el modelo ve más fuertes; hacia arriba, los que más ganaron. Filtrá por fecha y por nivel de juego, pasá el mouse por un héroe o tocalo para ver su ficha.</p>
+  <p class="lead">Hacia la derecha, los héroes que el modelo ve más fuertes; hacia arriba, los que más ganaron. Filtrá por fecha y por nivel de juego, pasá el mouse por un héroe para ver sus números, o tocalo: el gráfico pasa a mostrar cómo le fue a lo largo del tiempo o según el nivel.</p>
   <div class="explora">
-    <div class="marco grafico"><div id="g-explora" class="vis" role="img" aria-label="Los héroes según el modelo y según sus victorias"></div></div>
+    <div class="marco grafico">
+      <div class="explora-cabeza" id="explora-cabeza" hidden>
+        <button class="boton" id="b-volver" type="button">← Volver a los {{n_comp}} héroes</button>
+        <p class="detalle-titulo" id="detalle-titulo" aria-live="polite"></p>
+      </div>
+      <div id="g-explora" class="vis" role="img" aria-label="Los héroes según el modelo y según sus victorias"></div>
+      <div id="g-heroe" class="vis" role="img" aria-label="Victorias del equipo del héroe elegido, por fecha o por nivel" hidden></div>
+    </div>
     <aside class="ficha marco" id="ficha" aria-live="polite"></aside>
   </div>
+  <p class="mirar"><strong>Qué mirar.</strong> En el gráfico de un héroe, los rombos son cuánto ganó su equipo, con su intervalo de 95 %, y la línea punteada clara es lo que el modelo le suma con dos equipos parejos. Si los rombos se mantienen cerca de esa línea, el peso del modelo describe bien al héroe; si suben o bajan con la fecha o con el nivel, el peso es un promedio que esconde esa diferencia. El filtro que estaba puesto en el gráfico de los {{n_comp}} se mantiene: el nivel elegido filtra la vista por fecha, y la fecha elegida, la vista por nivel.</p>
 </section>
 
 <section id="draft" class="seccion" style="border-top:0">
@@ -388,6 +424,36 @@ footer p { margin: 0 0 6px; }
     <div><h4>Por qué la recomendación no mira al rival</h4><p>Cada héroe suma su peso sin importar contra quién juega, así que el orden de la recomendación es el mismo para los dos equipos. Lo probamos: agregarle al modelo un peso por cada cruce de héroes ({{n_cruces}} columnas) bajó el AUC de {{auc_cv_3}} a {{auc_cruces}}. Con {{por_corte}} partidas por fecha, los cruces no se pueden aprender.</p></div>
     <div><h4>Qué no se puede cargar</h4><p>Solo los {{n_comp}} héroes del catálogo con el que se entrenó el modelo, cada uno una vez y seis por equipo; entre ellos están los {{n_nuevos}} que Valve agregó después de la Entrega 3. Un héroe que salga más adelante no aparece hasta que el DAG genere un corte nuevo y el modelo se reentrene: sin eso, no tiene un peso.</p></div>
   </div></details>
+</section>
+
+<section id="cierre" class="seccion">
+  <p class="ceja">Cierre <i>◆</i> Lo que no sabemos</p>
+  <h2>La composición inclina la balanza, pero no decide la partida, y deja tres preguntas abiertas</h2>
+  <p class="lead">Sabiendo solo los 12 héroes, el modelo acierta el {{acc}} de las partidas que no vio. Es más que una moneda, pero deja afuera mucho de lo que pasa en una partida. Estas son las tres preguntas que el proyecto no responde, y qué haría falta para responderlas.</p>
+  <div class="abiertas">
+    <article class="abierta marco">
+      <p class="abierta-n">Pregunta 1</p>
+      <h3>¿Qué decide el otro {{error}}?</h3>
+      <p class="abierta-dato"><b>{{low}}</b>de aciertos en las partidas más parejas: lo mismo que una moneda</p>
+      <p>Cuando la composición está pareja, el resultado lo decide algo más: cómo juega cada uno, cuánto domina su héroe, los ítems, las decisiones durante la partida. Lo dejamos afuera <strong>a propósito</strong>: la pregunta del proyecto es cuánto se puede saber <em>solo</em> con la composición, antes de que empiece la partida.</p>
+      <p class="abierta-falta"><strong>Para responderla</strong>Sumar datos de cada jugador (su rango, sus partidas con el héroe) y medir cuánto agregan sobre la composición. Sería otra pregunta: ya no alcanzaría con mirar el draft.</p>
+    </article>
+    <article class="abierta marco">
+      <p class="abierta-n">Pregunta 2</p>
+      <h3>¿Existen los counters?</h3>
+      <p class="abierta-dato"><b>{{auc_cv_3}} → {{auc_cruces}}</b>de AUC al sumarle al modelo los {{n_cruces}} cruces entre héroes</p>
+      <p>Por eso el modelo no mira al rival y la recomendación del draft es la misma para los dos equipos. Que los cruces empeoren el modelo no prueba que los counters no existan: cada cruce aparece en unas {{por_cruce}} de las {{n_train}} partidas de entrenamiento, y con eso su efecto no se distingue del ruido.</p>
+      <p class="abierta-falta"><strong>Para responderla</strong>Entrenar con muchos más cortes juntos (el DAG ya los genera) o agrupar a los héroes por rol para tener menos cruces, y volver a medir.</p>
+    </article>
+    <article class="abierta marco">
+      <p class="abierta-n">Pregunta 3</p>
+      <h3>¿Cada cuánto envejece el modelo?</h3>
+      <p class="abierta-dato"><b>{{auc}} → {{auc_sep}}</b>de AUC en las partidas del {{fecha_test}}: el modelo de noviembre, y el de septiembre sin reentrenar</p>
+      <p>Sin reentrenar, el modelo de septiembre pierde el {{perdida_sep}} de lo que le saca al azar: los parches cambian el meta, y un héroe nuevo no tiene peso hasta que el modelo se reentrena. Sabemos que hay que reentrenar, pero no cada cuánto conviene.</p>
+      <p class="abierta-falta"><strong>Para responderla</strong>Generar cortes con el DAG a intervalos regulares, dejar fijo un modelo y medir cómo cae su AUC con los días y con cada parche.</p>
+    </article>
+  </div>
+  <p class="mirar"><strong>Una advertencia para toda la app.</strong> Los pesos del modelo son asociación, no causa. Que un héroe le sume puntos a su equipo puede deberse a que lo eligen jugadores que ya ganan más. La recomendación del draft dice qué héroes se asociaron con ganar, no qué héroe te hace ganar.</p>
 </section>
 
 <footer>
@@ -529,11 +595,37 @@ document.getElementById("b-cargar").addEventListener("click", () => {
   siguienteEjemplo++;
 });
 
+/* explorá: el mismo recuadro muta. Tocar un héroe cambia el gráfico de todos por el de ese héroe;
+   «Volver» vuelve al de todos. Los dos son especificaciones de Altair y la página muestra una u otra. */
+function mostrarExplora(modo) {
+  document.getElementById("g-explora").hidden = modo === "heroe";
+  document.getElementById("g-heroe").hidden = modo !== "heroe";
+  document.getElementById("explora-cabeza").hidden = modo !== "heroe";
+  // un gráfico de ancho «container» que estuvo oculto se vuelve a medir con el evento resize
+  window.dispatchEvent(new Event("resize"));
+}
+function verHeroe(slug) {
+  const h = HER[slug];
+  ficha(slug);
+  listos.then(() => {
+    const ve = vistas["g-explora"], vh = vistas["g-heroe"];
+    if (!ve || !vh) return;
+    const nivel = ve.signal("nivel"), fechaSel = ve.signal("fecha");
+    const filtro = [nivel !== "Todos" ? `nivel ${nivel}` : "", fechaSel !== "Todas" ? `fecha ${fechaSel}` : ""].filter(Boolean).join(" · ");
+    document.getElementById("detalle-titulo").innerHTML =
+      `<b>${h.nombre}</b> Cómo le fue a su equipo. Según el modelo le suma ${signo(h.pts)} pts: con dos equipos parejos, su equipo ganaría el ${fmt(50 + h.pts)} %.` +
+      (filtro ? ` Con el filtro que estaba puesto: ${filtro}.` : "");
+    ve.signal("elegido", slug).runAsync();
+    vh.signal("heroe", slug).signal("nivel_f", nivel).signal("fecha_f", fechaSel).runAsync();
+    mostrarExplora("heroe");
+  });
+}
 cargarEjemplo(DATOS.ejemplos[0], 5);
 ficha(DATOS.heroes.reduce((a, b) => (b.pts > a.pts ? b : a)).slug);
+document.getElementById("b-volver").addEventListener("click", () => mostrarExplora("todos"));
 listos.then(() => {
   const v = vistas["g-explora"];
-  if (v) v.addEventListener("click", (e, item) => { if (item && item.datum && item.datum.slug) ficha(item.datum.slug); });
+  if (v) v.addEventListener("click", (e, item) => { if (item && item.datum && item.datum.slug) verHeroe(item.datum.slug); });
 });
 
 /* el riel marca la sección que se está leyendo */
